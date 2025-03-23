@@ -1,3 +1,4 @@
+import random
 from random import Random
 from enum import Enum
 
@@ -38,6 +39,7 @@ class BadGoblin:
         self.total_life = 100
         self.life = self.total_life
         self.life_bar = LifeBar(self)
+        self.random_direction = random.choice(["left", "right"])
 
     @staticmethod
     def new(pos):
@@ -69,18 +71,25 @@ class BadGoblin:
         offset = player.offset
         player_pos = player.pos
 
+        limits = player.limits
+
+
         # if not hitting, move towards player
         if not self.stop:
-            if player_pos[0] + 1 <= self.pos[0]:
-                self.pos = (self.pos[0] - self.speed, self.pos[1])
+            if self.pos[0] < limits["left"] and self.direction == "left":
+                self.pos = (self.pos[0] + self.speed, self.pos[1])
                 if self.direction != "left":
                     self.jump.start_jump(self)
-                self.direction = "left"
-            elif player_pos[0] >= self.pos[0]:
-                self.pos = (self.pos[0] + self.speed, self.pos[1])
+                self.direction = "right"
+            elif self.pos[0] > limits["right"] and self.direction == "right":
+                self.pos = (self.pos[0] - self.speed, self.pos[1])
                 if self.direction != "right":
                     self.jump.start_jump(self)
-                self.direction = "right"
+                self.direction = "left"
+            elif self.direction == "right":
+                self.pos = (self.pos[0] + self.speed, self.pos[1])
+            elif self.direction == "left":
+                self.pos = (self.pos[0] - self.speed, self.pos[1])
 
         # update and display the current animation
         self.jump.update(self)
@@ -90,7 +99,8 @@ class BadGoblin:
     def check_player_hit(self, player):
         # check if player is hit
         self_rect = pygame.Rect(self.pos[0] + 20, self.pos[1] + 15, 40, 64)
-        if player.rect_contact(self_rect):
+        collision, rect = player.rect_contact(self_rect)
+        if collision:
             self.stop = True
             # if player is hits the goblin, set alive to False
             if player.has_hit_first(self):

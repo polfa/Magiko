@@ -28,6 +28,8 @@ SPEED = 4
 
 COLLISION_TILES = ["blue_bridge"]
 
+BASE_PATH = os.path.dirname(os.path.abspath(__file__))
+
 # ----------------------------------------------------------------
 # UTILS METHODS
 

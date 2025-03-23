@@ -1,11 +1,13 @@
 from src.levels.level_1.waves import WavesLevel1
 from src.levels.level_base import LevelBase
 
+from src.utils import *
 
 class Level1(LevelBase):
 
     def __init__(self, name, character_name):
-        super().__init__(name, character_name)
+        limits = {"left": 0, "right": WIDTH + TILE_SIZE * 2}
+        super().__init__(name, character_name, limits)
         self.wave = WavesLevel1(self.player.initial_pos[1])
 
     def key_pressed(self, key):

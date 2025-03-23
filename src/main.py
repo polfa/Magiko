@@ -1,5 +1,8 @@
 import sys
 
+import pygame as pygame
+
+from src.UI.UI import UI
 from src.enemies.bad_goblin import BadGoblin
 from src.common_scripts.clouds import Clouds
 from src.enemies.enemie_manager import EnemieManager
@@ -22,6 +25,8 @@ class Main:
 
         self.running = True
         self.level_1 = Level1("level_1", "orange_superhero")
+
+        self.UI = UI(self.level_1)
 
     def key_pressed(self, keys):
         """
@@ -65,6 +70,9 @@ class Main:
             elif event.type == pygame.KEYDOWN:
                 pass
 
+            if event.type == pygame.MOUSEMOTION:
+                self.UI.mouse_move(pygame.mouse.get_pos())
+
         # get a list of the current pressed keys
         keys = pygame.key.get_pressed()
         self.key_down(keys)
@@ -72,6 +80,11 @@ class Main:
             pass
         if keys[pygame.K_ESCAPE]:
             self.running = False
+
+
+
+    def get_level(self):
+        return self.level_1
 
     def run(self):
         """
@@ -84,6 +97,8 @@ class Main:
 
             # update current scene
             self.level_1.run(self.screen)
+
+            self.UI.draw(self.screen)
 
             # set fps
             self.clock.tick(FPS)

@@ -3,6 +3,7 @@ from enum import Enum
 from src.common_scripts.animation import Animation
 from src.common_scripts.collision_manager import CollisionManager
 from src.common_scripts.jump import Jump
+from src.player_utils.player_stats import PlayerStats
 from src.tilemap.tilemap import TileMap
 from utils import *
 
@@ -11,13 +12,19 @@ class States(Enum):
     IDLE = "idle"
     RUN = "run"
     JUMP = "jump"
-    HIT = "hit"
-    STRIKE = "strike"
+    PRIMARY = "primary"
+    SECONDARY = "secondary"
+    ULTIMATE = "ultimate"
     FALL = "fall"
 
 
+class Direction(Enum):
+    LEFT = "left"
+    RIGHT = "right"
+
+
 class Player:
-    def __init__(self, name):
+    def __init__(self, name, level):
 
         """
         Player class constructor
@@ -25,28 +32,41 @@ class Player:
         """
 
         self.name = name
+        self.level = level
+        self.stats = PlayerStats()
+        self.animations = self.load_animations()
 
+        self.state = States.IDLE
+        self.hit_timer = 0
+        self.pos = (WIDTH // 2, 833)
+        self.initial_pos = (self.pos[0], self.pos[1])
+        self.direction = Direction.RIGHT
+        self.speed = self.stats.get_speed()
+        self.offset = (0, 0)
+        self.limits = level.limits
+        self.jump = Jump(self, jump_power=self.stats.get_jump_power(), jump_speed=self.stats.get_jump_speed(),
+                         gravity=0.2, jump_cooldown=self.stats.get_jump_cooldown())
+        self.collision_manager = CollisionManager()
+        self.colliding = False
+
+    def load_animations(self):
+        name = self.name
         # load animations for each state
-        self.animations = {
+        return {
             States.IDLE: Animation(f"img/characters/{name}/idle", 0.1),
             States.RUN: Animation(f"img/characters/{name}/run", 0.03),
             States.JUMP: Animation(f"img/characters/{name}/jump", 1),
             States.FALL: Animation(f"img/characters/{name}/fall", 1),
-            States.HIT: Animation(f"img/characters/{name}/first_hit", 0.03, loop=False),
-            States.STRIKE: Animation(f"img/characters/{name}/strike", 0.045, loop=False),
+
+            States.PRIMARY: Animation(self.stats.get_active_primary().get_animation_path(name), 0.03, loop=False)
+            if self.stats.get_active_primary() is not None else None,
+
+            States.SECONDARY: Animation(self.stats.get_active_secondary().get_animation_path(name), 0.045, loop=False)
+            if self.stats.get_active_secondary() is not None else None,
+
+            #States.ULTIMATE: Animation(self.stats.get_active_ultimate().get_animation_path(name), 0.03, loop=False)
+            #if self.stats.get_active_ultimate() is not None else None,
         }
-        # set initial attributes
-        self.hit_timer = 0
-        self.state = States.IDLE
-        self.pos = (WIDTH // 2, 833)
-        self.initial_pos = (self.pos[0], self.pos[1])
-        self.direction = "right"
-        self.speed = 4
-        self.offset = (0, 0)
-        self.limits = {"left": 0, "right": WIDTH + TILE_SIZE * 2}
-        self.jump = Jump(self, jump_power=10, jump_speed=0, gravity=0.2, jump_cooldown=15)
-        self.collision_manager = CollisionManager()
-        self.colliding = False
 
     def reset(self):
         self.pos = self.initial_pos
@@ -55,6 +75,13 @@ class Player:
         self.hit_timer = 0
         self.jump.jumping = False
         self.jump.no_jump_time = self.jump.cooldown
+
+    def set_level(self, level):
+        self.level = level
+
+    def set_pos(self, pos):
+        self.pos = pos
+        self.initial_pos = pos
 
     def change_state(self, state):
         """
@@ -80,7 +107,7 @@ class Player:
         :return: True if the player is in contact with the rect, False otherwise
         """
         player_rect = self.get_rect()
-        return player_rect.colliderect(rect)
+        return player_rect.colliderect(rect), rect
 
     def get_rect(self) -> pygame.Rect:
         """
@@ -95,7 +122,7 @@ class Player:
         Check if the player is hitting
         :return: True if the player is hitting, False otherwise
         """
-        return self.state == States.HIT or self.state == States.STRIKE
+        return self.state == States.PRIMARY or self.state == States.SECONDARY
 
     def has_hit_first(self, enemie) -> bool:
         """
@@ -104,15 +131,15 @@ class Player:
         :param enemie: object from BadGoblin class in src/bad_goblin.py
         :return: True if the player has hit the enemie, False otherwise
         """
-        if 40 < self.hit_timer < 60 and self.state == States.HIT:
-            if self.direction == enemie.direction:
+        if 40 < self.hit_timer < 60 and self.state == States.PRIMARY:
+            if self.direction.value == enemie.direction:
                 return False
             return True
         return False
 
     def has_hit_strike(self, enemie) -> bool:
-        if 120 < self.hit_timer < 160 and self.state == States.STRIKE:
-            if self.direction == enemie.direction:
+        if 120 < self.hit_timer < 160 and self.state == States.SECONDARY:
+            if self.direction.value == enemie.direction:
                 return False
             return True
         return False
@@ -131,7 +158,7 @@ class Player:
                 self.change_state(States.FALL)
 
         # if the player is in hit state, increase the hit timer
-        if self.state == States.HIT or self.state == States.STRIKE:
+        if self.state == States.PRIMARY or self.state == States.SECONDARY:
             self.hit_timer += 1
 
         # if the current animation is not active, change the state to idle
@@ -139,15 +166,15 @@ class Player:
             self.hit_timer = 0
             self.change_state(States.IDLE)
 
-        # check collisions
-        collision = self.collision_manager.check_collision(self, tilemap)
-        if collision:
+        # check the collision with the tilemap under the player
+        bottom_collision = self.collision_manager.check_bottom_collision(self, tilemap)
+        if bottom_collision:
             self.colliding = True
-            if self.jump.jump_speed < 0:
+            if self.jump.jump_speed < 0 and bottom_collision:
                 self.jump.jumping = False
-                self.pos = (self.pos[0], ((self.pos[1] - 1) // 64) * 64)
+                self.pos = (self.pos[0], round(self.pos[1] / 64) * 64)
         else:
-            if not self.collision_manager.check_bottom_collision(self, tilemap) and self.colliding and not self.jump.is_jumping():
+            if not bottom_collision and self.colliding and not self.jump.is_jumping():
                 self.colliding = False
                 self.jump.jumping = True
                 self.jump.jump_speed = -1
@@ -159,27 +186,23 @@ class Player:
         self.render(screen)
 
     def move(self, direction):
-        """
-        Move the player in a direction
-        :param direction: String, "right" or "left"
-        :return:
-        """
+
         # if the direction is not right or left, do nothing
-        if direction != "right" and direction != "left":
+        if direction != Direction.RIGHT and direction != Direction.LEFT:
             return
 
-        # define left or right with positive or negative values
-        if direction == "left":
-            if self.limits["left"] >= self.pos[0]:
+        # define Direction.LEFT or right with positive or negative values
+        if direction == Direction.LEFT:
+            if self.limits[Direction.LEFT.value] >= self.pos[0]:
                 return
             mult = -1
         else:
-            if self.limits["right"] <= self.pos[0]:
+            if self.limits[Direction.RIGHT.value] <= self.pos[0]:
                 return
             mult = 1
 
         # if the player is not in hit state, move the player
-        if self.state != States.HIT or self.state != States.STRIKE or self.jump.is_jumping():
+        if self.state != States.PRIMARY or self.state != States.SECONDARY or self.jump.is_jumping():
             if not self.jump.is_jumping():
                 self.change_state(States.RUN)
             self.pos = (self.pos[0] + self.speed * mult, self.pos[1])
@@ -192,15 +215,15 @@ class Player:
         :param screen: main pygame display
         :return:
         """
-        if self.state == States.STRIKE and self.direction == "left":
-            screen.blit(self.animations[self.state].get_current_frame(self.direction),
+        if self.state == States.SECONDARY and self.direction == Direction.LEFT:
+            screen.blit(self.animations[self.state].get_current_frame(self.direction.value),
                         (self.pos[0] + self.offset[0] - TILE_SIZE, self.pos[1] + self.offset[1] - TILE_SIZE))
             return
-        elif self.state == States.STRIKE:
-            screen.blit(self.animations[self.state].get_current_frame(self.direction),
+        elif self.state == States.SECONDARY:
+            screen.blit(self.animations[self.state].get_current_frame(self.direction.value),
                         (self.pos[0] + self.offset[0], self.pos[1] + self.offset[1] - TILE_SIZE))
             return
-        screen.blit(self.animations[self.state].get_current_frame(self.direction), (self.pos[0] + self.offset[0], self.pos[1] + self.offset[1]))
+        screen.blit(self.animations[self.state].get_current_frame(self.direction.value), (self.pos[0] + self.offset[0], self.pos[1] + self.offset[1]))
 
     def key_down(self, keys):
         """
@@ -212,11 +235,11 @@ class Player:
         movement = False
 
         # check the keys pressed and move the player
-        if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and (self.hit_timer > 20 or self.state != States.HIT and self.state != States.STRIKE):
-            self.move("left")
+        if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and (self.hit_timer > 20 or self.state != States.PRIMARY and self.state != States.SECONDARY):
+            self.move(Direction.LEFT)
             movement = True
-        elif (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and (self.hit_timer > 10 or self.state != States.HIT and self.state != States.STRIKE):
-            self.move("right")
+        elif (keys[pygame.K_RIGHT] or keys[pygame.K_d]) and (self.hit_timer > 10 or self.state != States.PRIMARY and self.state != States.SECONDARY):
+            self.move(Direction.RIGHT)
             movement = True
 
         # if pressing space and the player is not jumping and the jump cooldown is over, jump
@@ -224,7 +247,7 @@ class Player:
             self.jump.start_jump(self)
 
         # if not moving and not jumping and not hit, change state to idle
-        if not movement and not self.jump.is_jumping() and self.state != States.HIT and self.state != States.STRIKE:
+        if not movement and not self.jump.is_jumping() and self.state != States.PRIMARY and self.state != States.SECONDARY:
             self.change_state(States.IDLE)
 
     def mouse_pressed(self, event):
@@ -234,10 +257,10 @@ class Player:
         :return:
         """
         # if the player pressed the left mouse button, reset the hit timer and change state to hit
-        if self.state != States.HIT and self.state != States.STRIKE:
+        if self.state != States.PRIMARY and self.state != States.SECONDARY:
             if event.button == 1:
                 self.hit_timer = 0
-                self.change_state(States.HIT)
+                self.change_state(States.PRIMARY)
             if event.button == 3:
                 self.hit_timer = 0
-                self.change_state(States.STRIKE)
+                self.change_state(States.SECONDARY)

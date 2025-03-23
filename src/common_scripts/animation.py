@@ -2,6 +2,8 @@ import os
 import time
 import pygame
 
+from src.utils import BASE_PATH
+
 
 class Animation:
     def __init__(self, dir_path, frame_rate, loop=True):
@@ -28,7 +30,7 @@ class Animation:
         :return: list of frames [pygame.Surface]
         """
         # get the path to the directory and set the frames list
-        dir_path = os.path.join(os.path.dirname(__file__), "../..", dir_path)
+        dir_path = f"{BASE_PATH}/../{dir_path}"
         frames = []
 
         # load the frames from the directory

@@ -10,17 +10,18 @@ from src.utils import *
 
 class LevelBase(ABC):
     @abstractmethod
-    def __init__(self, name, character_name):
+    def __init__(self, name, character_name, limits):
         self.name = name
 
         # initialize variables
         self.running = True
         self.tilemap = TileMap()
-        self.player = Player(character_name)
+        self.limits = limits
         self.init_tiles(self.tilemap)
-        self.clouds = Clouds("blue", count=26)
         self.tilemap.load_tile_map_from_json(self.name)
         self.wave = None
+        self.player = Player(character_name, self)
+        self.clouds = Clouds("blue", count=26)
 
     def init_tiles(self, tilemap):
         """
