@@ -4,7 +4,7 @@ import pygame
 
 
 class Attack(ABC):
-    def __init__(self, damage, mana_cost, cooldown, icon, name=""):
+    def __init__(self, damage, mana_cost, cooldown, icon, area, name=""):
         self.name = name
         self.damage = damage
         self.cooldown = cooldown
@@ -12,6 +12,7 @@ class Attack(ABC):
         self.animation = None
         icon = pygame.transform.scale_by(icon, 2)
         self.icon = icon
+        self.area = area
 
     def get_icon_path(self):
         return self.icon
@@ -51,3 +52,6 @@ class Attack(ABC):
     @abstractmethod
     def is_multihit(self):
         pass
+
+    def get_area(self):
+        return self.area

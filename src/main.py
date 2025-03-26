@@ -75,6 +75,10 @@ class Main:
             if event.type == pygame.MOUSEMOTION:
                 self.UI.mouse_move(pygame.mouse.get_pos())
 
+
+            if event.type == pygame.KEYDOWN:
+                self.key_pressed(event)
+
         # get a list of the current pressed keys
         keys = pygame.key.get_pressed()
         self.key_down(keys)

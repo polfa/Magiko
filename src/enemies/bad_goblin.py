@@ -19,6 +19,13 @@ class State(Enum):
     HIT = "hit"
 
 
+def paint_rect(player, screen, rect, color=(0, 255, 0), offset=True):
+    s = rect.copy()
+    s.x += player.offset[0]
+    s.y += player.offset[1]
+    pygame.draw.rect(screen, color, s)
+
+
 class BadGoblin:
     def __init__(self, pos=(0, 0)):
         """
@@ -52,19 +59,20 @@ class BadGoblin:
         """
         return BadGoblin(pos)
 
-    def get_self_hit_box(self, verbose=False):
-        if self.direction == 1:
-            self_rect = pygame.Rect(self.pos[0] + self.size * 0.8 * self.direction, self.pos[1], self.size / 8, self.size)
-        else:
-            self_rect = pygame.Rect(self.pos[0], self.pos[1], self.size / 8, self.size)
-        return self_rect
+    def move(self, player):
+        limits = player.limits
+        if self.pos[0] < limits["left"] and self.direction == -1:
+            self.pos = (self.pos[0] + self.speed, self.pos[1])
+            if self.direction != -1:
+                self.jump.start_jump(self)
+            self.direction = self.direction * -1
+        elif self.pos[0] > limits["right"] and self.direction == 1:
+            self.pos = (self.pos[0] - self.speed, self.pos[1])
+            if self.direction != 1:
+                self.jump.start_jump(self)
+            self.direction = self.direction * -1
 
-    def paint_rect(self, player, screen, rect, color=(0, 255, 0), offset=True):
-        s = rect.copy()
-        s.x += player.offset[0]
-        s.y += player.offset[1]
-        pygame.draw.rect(screen, color, s)
-
+        self.pos = (self.pos[0] + self.speed * self.direction, self.pos[1])
 
     def update(self, player, screen):
         """
@@ -72,26 +80,23 @@ class BadGoblin:
         :param player: object from Player class in src/player.py
         :param screen: main pygame display
         """
+        # if dead, do nothing
+        if not self.alive:
+            return
+
         self_rect = self.get_self_hit_box()
-        self.paint_rect(player, screen, self_rect)
-
         collision, rect = player.rect_contact(self_rect)
-
-        if collision:
-            self.stop = True
 
         # if player is not hitting the goblin, set hit state and animation
         if self.animations[self.state] != self.animations[State.HIT] and collision:
+            self.stop = True
             self.state = State.HIT
+        # if goblin hits the player, make player lose health and move the goblin
         elif self.animations[self.state] == self.animations[State.HIT]:
             if self.hit_timer > 70 and collision:
                 self.hit_timer = 0
                 player.stats.add_health(-self.damage)
                 self.pos = (self.pos[0] - self.size * self.direction, self.pos[1])
-
-        # if dead, do nothing
-        if not self.alive:
-            return
 
         # if state is hit, add to the hit timer
         if self.state == State.HIT:
@@ -101,43 +106,67 @@ class BadGoblin:
         if not self.animations[self.state].active:
             self.animations[self.state].end()
 
-        # define player position and offset
-        offset = player.offset
-        player_pos = player.pos
-
-        limits = player.limits
-
-
-        # if not hitting, move towards player
         if not self.stop:
-            if self.pos[0] < limits["left"] and self.direction == -1:
-                self.pos = (self.pos[0] + self.speed, self.pos[1])
-                if self.direction != -1:
-                    self.jump.start_jump(self)
-                self.direction = self.direction * -1
-            elif self.pos[0] > limits["right"] and self.direction == 1:
-                self.pos = (self.pos[0] - self.speed, self.pos[1])
-                if self.direction != 1:
-                    self.jump.start_jump(self)
-                self.direction = self.direction * -1
-
-            self.pos = (self.pos[0] + self.speed * self.direction, self.pos[1])
+            self.move(player)
 
         # update and display the current animation
         self.jump.update(self)
         self.animations[self.state].update()
-        self.render(screen, offset)
+        self.render(screen, player.offset)
 
     def check_player_hit(self, player: Player):
+        # if dead, do nothing
+        if not self.alive:
+            return
+
+        # get the active attacks
         active_primary = player.stats.get_active_primary()
         active_secondary = player.stats.get_active_secondary()
         active_ultimate = player.stats.get_active_ultimate()
+
+        self_rect = self.get_player_hit_box(player, active_primary, active_secondary, active_ultimate)
+        collision, rect = player.rect_contact(self_rect)
+
+        if collision:
+            if self.primary_hit(player, active_primary):
+                return active_primary
+            elif self.secondary_hit(player, active_secondary):
+                return active_secondary
+            elif self.ultimate_hit(player, active_ultimate):
+                return active_ultimate
+        else:
+            self.stop = False
+            # if player is not hitting the goblin, set tracking state and animation
+            if self.state == State.HIT:
+                self.hit_timer = 0
+                self.animations[self.state].end()  # reset the hit animation
+            self.state = State.TRACKING
+
+        return None
+
+    def get_self_hit_box(self, verbose=False):
+        if self.direction == 1:
+            self_rect = pygame.Rect(self.pos[0] + self.size * 0.8 * self.direction, self.pos[1], self.size / 8, self.size)
+        else:
+            self_rect = pygame.Rect(self.pos[0], self.pos[1], self.size / 8, self.size)
+        return self_rect
+
+    def get_player_hit_box(self, player, active_primary, active_secondary, active_ultimate):
         first = player.state.value == "primary"
         second = player.state.value == "secondary"
         ulti = player.state.value == "ultimate"
-        area = 100 + self.size
-
-        if first and active_primary.is_multihit() or second and active_secondary.is_multihit() or ulti and active_ultimate.is_multihit():
+        is_multihit = False
+        area = 0
+        if first and active_primary.is_multihit():
+            area = active_primary.get_area() + self.size
+            is_multihit = True
+        elif second and active_secondary.is_multihit():
+            area = active_secondary.get_area() + self.size
+            is_multihit = True
+        elif ulti and active_ultimate.is_multihit():
+            area = active_ultimate.get_area() + self.size
+            is_multihit = True
+        if is_multihit:
             if self.direction == 1:
                 self_rect = pygame.Rect(self.pos[0] - area, self.pos[1] - area, area, area // 1.5)
                 self_rect.center = (self.pos[0] + self.size // 2, self.pos[1] + self.size // 2)
@@ -149,60 +178,52 @@ class BadGoblin:
                 self_rect = pygame.Rect(self.pos[0] - self.size * 0.3, self.pos[1], self.size * 1.3, self.size)
             else:
                 self_rect = pygame.Rect(self.pos[0], self.pos[1], self.size * 1.3, self.size)
+        return self_rect
 
-        # self.paint_rect(player, player.level.screen, self_rect, color=(255, 0, 0))
-        collision, rect = player.rect_contact(self_rect)
-        # self.paint_rect(player, player.level.screen, player.get_rect(), color=(0, 0, 255), offset=False)
-        if collision:
-            # if player is hits the goblin, set alive to False
-            if player.has_hit_first(self):
-                self.life -= active_primary.damage
-                self.state = State.TRACKING
-                self.hit_timer = 0
-                self.animations[State.HIT].end()
-                if player.direction.value == "right":
-                    self.pos = (self.pos[0] + 10, self.pos[1])
-                if player.direction.value == "left":
-                    self.pos = (self.pos[0] - 10, self.pos[1])
-                if self.life <= 0:
-                    self.alive = False
-                    player.level.add_coin(self.pos)
-                return active_primary
-            elif player.has_hit_strike(self):
-                self.life -= active_secondary.damage
-                self.state = State.TRACKING
-                self.hit_timer = 0
-                self.animations[State.HIT].end()
-                if player.direction.value == "right":
-                    self.pos = (self.pos[0] + 50, self.pos[1])
-                if player.direction.value == "left":
-                    self.pos = (self.pos[0] - 50, self.pos[1])
-                if self.life <= 0:
-                    self.alive = False
-                    player.level.add_coin(self.pos)
-                return active_secondary
-            elif player.has_hit_ultimate(self):
-                self.life -= active_ultimate.damage
-                self.state = State.TRACKING
-                self.hit_timer = 0
-                self.animations[State.HIT].end()
-                if player.direction.value == "right":
-                    self.pos = (self.pos[0] + 50, self.pos[1])
-                if player.direction.value == "left":
-                    self.pos = (self.pos[0] - 50, self.pos[1])
-                if self.life <= 0:
-                    self.alive = False
-                    player.level.add_coin(self.pos)
-                return active_ultimate
-        else:
-            self.stop = False
-            # if player is not hitting the goblin, set tracking state and animation
-            if self.state == State.HIT:
-                self.hit_timer = 0
-                self.animations[self.state].end()  # reset the hit animation
+    def primary_hit(self, player, active_primary):
+        if player.has_hit_first(self):
+            self.life -= active_primary.damage
             self.state = State.TRACKING
+            self.hit_timer = 0
+            self.animations[State.HIT].end()
+            if player.direction.value == "right":
+                self.pos = (self.pos[0] + 10, self.pos[1])
+            if player.direction.value == "left":
+                self.pos = (self.pos[0] - 10, self.pos[1])
+            if self.life <= 0:
+                self.alive = False
+            return True
+        return False
 
-        return None
+    def secondary_hit(self, player, active_secondary):
+        if player.has_hit_strike(self):
+            self.life -= active_secondary.damage
+            self.state = State.TRACKING
+            self.hit_timer = 0
+            self.animations[State.HIT].end()
+            if player.direction.value == "right":
+                self.pos = (self.pos[0] + 50, self.pos[1])
+            if player.direction.value == "left":
+                self.pos = (self.pos[0] - 50, self.pos[1])
+            if self.life <= 0:
+                self.alive = False
+            return True
+        return False
+
+    def ultimate_hit(self, player, active_ultimate):
+        if player.has_hit_ultimate(self):
+            self.life -= active_ultimate.damage
+            self.state = State.TRACKING
+            self.hit_timer = 0
+            self.animations[State.HIT].end()
+            if player.direction.value == "right":
+                self.pos = (self.pos[0] + 50, self.pos[1])
+            if player.direction.value == "left":
+                self.pos = (self.pos[0] - 50, self.pos[1])
+            if self.life <= 0:
+                self.alive = False
+            return True
+        return False
 
     def reset(self):
         """

@@ -34,7 +34,7 @@ class Button:
     def draw(self, screen):
         pygame.draw.rect(screen, self.color, (self.x, self.y, self.width, self.height))
         text = self.font.render(self.text, True, self.text_color)
-        text_rect = text.get_rect(center=(self.x + self.width / 2, self.y + self.height / 2))
+        text_rect = text.get_rect(center=(self.x + self.width / 2, self.y + self.height / 1.7))
         if self.mouse_above:
             screen.blit(self.shadow_surface, (self.rect.x, self.rect.y))
         screen.blit(text, text_rect)

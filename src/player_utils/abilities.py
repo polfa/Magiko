@@ -16,7 +16,7 @@ class PlayerAbilities:
         }
 
         self.ultimates = {
-            "basic_ultimate": BasicUltimateAttack(damage=20, mana_cost=10, cooldown=10),
+            "basic_ultimate": BasicUltimateAttack(damage=20, mana_cost=5, cooldown=10),
             # "lightning": Lightning(player),
         }
 

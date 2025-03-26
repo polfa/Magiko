@@ -68,7 +68,7 @@ class Player:
             States.SECONDARY: Animation(self.stats.get_active_secondary().get_animation_path(name), 0.022, loop=False)
             if self.stats.get_active_secondary() is not None else None,
 
-            States.ULTIMATE: Animation(self.stats.get_active_ultimate().get_animation_path(name), 0.035, loop=False)
+            States.ULTIMATE: Animation(self.stats.get_active_ultimate().get_animation_path(name), 0.015, loop=False)
             if self.stats.get_active_ultimate() is not None else None,
         }
 
@@ -190,9 +190,14 @@ class Player:
                 self.colliding = False
                 self.jump.jumping = True
                 self.jump.jump_speed = -1
-
-        if self.level.remove_collision_coin(self.get_rect()):
-            self.stats.add_coins(1)
+        collectable = self.level.remove_collision_collectable(self.get_rect())
+        if collectable is not False:
+            if collectable.name == "coin":
+                self.stats.add_coins(collectable.value)
+            if collectable.name == "mana_potion":
+                self.stats.add_mana(collectable.value)
+            if collectable.name == "health_potion":
+                self.stats.add_health(collectable.value)
 
         # update the offset, jump logic, animation and render the player
         self.offset = (self.offset[0], -(self.pos[1] - self.initial_pos[1]) // 2)
@@ -239,12 +244,20 @@ class Player:
                         (self.pos[0] + self.offset[0], self.pos[1] + self.offset[1] - TILE_SIZE))
             return
         elif self.state == States.ULTIMATE and self.direction == Direction.LEFT:
-            screen.blit(self.animations[self.state].get_current_frame(self.direction.value),
-                        (self.pos[0] + self.offset[0] - TILE_SIZE, self.pos[1] + self.offset[1] - TILE_SIZE))
+            if self.animations[self.state].current_frame < 15:
+                screen.blit(self.animations[self.state].get_current_frame(self.direction.value),
+                            (self.pos[0] + self.offset[0] - TILE_SIZE, self.pos[1] + self.offset[1] - TILE_SIZE))
+            else:
+                screen.blit(self.animations[self.state].get_current_frame(self.direction.value),
+                            (self.pos[0] + self.offset[0] - TILE_SIZE * 3, self.pos[1] + self.offset[1] - TILE_SIZE * 3))
             return
         elif self.state == States.ULTIMATE:
-            screen.blit(self.animations[self.state].get_current_frame(self.direction.value),
-                        (self.pos[0] + self.offset[0], self.pos[1] + self.offset[1] - TILE_SIZE))
+            if self.animations[self.state].current_frame < 15:
+                screen.blit(self.animations[self.state].get_current_frame(self.direction.value),
+                            (self.pos[0] + self.offset[0], self.pos[1] + self.offset[1] - TILE_SIZE))
+            else:
+                screen.blit(self.animations[self.state].get_current_frame(self.direction.value),
+                            (self.pos[0] + self.offset[0], self.pos[1] + self.offset[1] - TILE_SIZE * 3))
             return
         screen.blit(self.animations[self.state].get_current_frame(self.direction.value), (self.pos[0] + self.offset[0], self.pos[1] + self.offset[1]))
 
@@ -256,11 +269,6 @@ class Player:
         """
         # we define a movement variable to check if the player is moving
         movement = False
-        ult_mana_cost = self.stats.get_active_ultimate().get_mana_cost()
-        if (keys[pygame.K_q]) and self.stats.get_mana() >= ult_mana_cost:
-            self.hit_timer = time.get_ticks() / pow(10, 3)
-            self.change_state(States.ULTIMATE)
-            self.stats.add_mana(-ult_mana_cost)
         # check the keys pressed and move the player
         if (keys[pygame.K_LEFT] or keys[pygame.K_a]) and (self.hit_timer > 20 or self.state not in self.attack_states):
             self.move(Direction.LEFT)
@@ -294,3 +302,10 @@ class Player:
                 self.hit_timer = time.get_ticks() / pow(10, 3)
                 self.change_state(States.SECONDARY)
                 self.stats.add_mana(-self.stats.get_active_secondary().get_mana_cost())
+
+    def key_pressed(self, event):
+        ult_mana_cost = self.stats.get_active_ultimate().get_mana_cost()
+        if event.key == pygame.K_q and self.stats.get_mana() >= ult_mana_cost:
+            self.hit_timer = time.get_ticks() / pow(10, 3)
+            self.change_state(States.ULTIMATE)
+            self.stats.add_mana(-ult_mana_cost)

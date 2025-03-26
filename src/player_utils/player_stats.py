@@ -12,7 +12,7 @@ class PlayerStats:
             "mana": 20,
             "max_mana": 20,
             "damage": 10,
-            "coins": 150320,
+            "coins": 5,
             "speed": 4,
             "jump_power": 10,
             "jump_speed": 0,
@@ -106,10 +106,6 @@ class PlayerStats:
         self.stats["coins"] = value
 
     def add_health(self, value):
-        if value > 0:
-            if self.stats["health"] + value > self.get_max_health():
-                self.stats["health"] = self.get_max_health()
-                return
         if value < 0:
             if self.stats["health"] + value < 0:
                 self.stats["health"] = 0
@@ -118,16 +114,11 @@ class PlayerStats:
         self.stats["health"] += value
 
     def add_mana(self, value):
-        if value > 0:
-            if self.stats["mana"] + value > self.get_max_mana():
-                self.stats["mana"] = self.get_max_mana()
-            else:
-                self.stats["mana"] += value
         if value < 0:
             if self.stats["mana"] + value < 0:
                 self.stats["mana"] = 0
-            else:
-                self.stats["mana"] += value
+
+        self.stats["mana"] += value
 
     def add_damage(self, value):
         self.stats["damage"] += value

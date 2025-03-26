@@ -1,3 +1,5 @@
+from random import randint
+
 from src.enemies.bad_goblin import BadGoblin
 
 
@@ -37,6 +39,14 @@ class EnemieManager:
             if not is_hit:
                 continue
             if not enemie.alive:
+                random = randint(0, 10)
+                print(random)
+                if random == 0 or random == 1:
+                    player.level.add_mana_potion(enemie.pos)
+                elif random == 2:
+                    player.level.add_health_potion(enemie.pos)
+                elif random > 2:
+                    player.level.add_coin(enemie.pos)
                 self.remove_enemie(enemie)
 
             if is_hit:

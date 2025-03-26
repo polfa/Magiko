@@ -12,7 +12,8 @@ class BasicPrimaryAttack(Attack, ABC):
         image = pygame.image.load(icon)
         image.set_colorkey((0, 0, 0))
         image.set_colorkey((255, 255, 255))
-        super().__init__(damage, mana_cost, cooldown, image)
+        area = 1
+        super().__init__(damage, mana_cost, cooldown, image, area)
         self.name = "BASIC PRIMARY ATTACK"
 
     def get_name(self):
@@ -34,7 +35,8 @@ class BasicSecondaryAttack(Attack, ABC):
         image = pygame.image.load(icon)
         image.set_colorkey((0, 0, 0))
         image.set_colorkey((255, 255, 255))
-        super().__init__(damage, mana_cost, cooldown, image)
+        area = 100
+        super().__init__(damage, mana_cost, cooldown, image, area)
         self.name = "BASIC SECONDARY ATTACK"
 
     def get_name(self):
@@ -55,7 +57,8 @@ class BasicUltimateAttack(Attack, ABC):
         image = pygame.image.load(icon)
         image.set_colorkey((0, 0, 0))
         image.set_colorkey((255, 255, 255))
-        super().__init__(damage, mana_cost, cooldown, image)
+        area = 200
+        super().__init__(damage, mana_cost, cooldown, image, area)
         self.name = "BASIC ULTIMATE ATTACK"
 
     def get_name(self):
