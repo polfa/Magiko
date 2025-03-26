@@ -8,9 +8,11 @@ class PlayerStats:
     def __init__(self):
         self.stats = {
             "health": 100,
-            "mana": 10,
+            "max_health": 100,
+            "mana": 20,
+            "max_mana": 20,
             "damage": 10,
-            "coins": 5,
+            "coins": 150320,
             "speed": 4,
             "jump_power": 10,
             "jump_speed": 0,
@@ -39,6 +41,18 @@ class PlayerStats:
 
     def get_active_ultimate(self) -> Attack:
         return self.abilities.get_active_ultimate()
+
+    def get_max_mana(self):
+        return self.stats["max_mana"]
+
+    def set_max_mana(self, value):
+        self.stats["max_mana"] = value
+
+    def get_max_health(self):
+        return self.stats["max_health"]
+
+    def set_max_health(self, value):
+        self.stats["max_health"] = value
 
     def set_primary(self, name):
         self.abilities.set_active_primary(name)
@@ -92,10 +106,28 @@ class PlayerStats:
         self.stats["coins"] = value
 
     def add_health(self, value):
+        if value > 0:
+            if self.stats["health"] + value > self.get_max_health():
+                self.stats["health"] = self.get_max_health()
+                return
+        if value < 0:
+            if self.stats["health"] + value < 0:
+                self.stats["health"] = 0
+                return
+
         self.stats["health"] += value
 
     def add_mana(self, value):
-        self.stats["mana"] += value
+        if value > 0:
+            if self.stats["mana"] + value > self.get_max_mana():
+                self.stats["mana"] = self.get_max_mana()
+            else:
+                self.stats["mana"] += value
+        if value < 0:
+            if self.stats["mana"] + value < 0:
+                self.stats["mana"] = 0
+            else:
+                self.stats["mana"] += value
 
     def add_damage(self, value):
         self.stats["damage"] += value

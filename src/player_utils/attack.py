@@ -47,3 +47,7 @@ class Attack(ABC):
     @abstractmethod
     def is_area_attack(self):
         pass
+
+    @abstractmethod
+    def is_multihit(self):
+        pass

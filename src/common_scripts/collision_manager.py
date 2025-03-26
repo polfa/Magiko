@@ -13,7 +13,7 @@ class CollisionManager:
             if name in tilemap.collision_tiles:
                 pos_screen = (int(pos[0]) * TILE_SIZE, int(pos[1]) * TILE_SIZE)
                 tile_rect = pygame.Rect(pos_screen, (TILE_SIZE, TILE_SIZE))
-                if entity.rect_contact(tile_rect):
+                if entity.rect.colliderect(tile_rect):
                     return True
         return False
 

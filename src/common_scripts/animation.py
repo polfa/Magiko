@@ -73,9 +73,9 @@ class Animation:
         :param direction: the direction of the animation ("right" or "left")
         :return: the current frame (pygame.Surface)
         """
-        if direction == "right":
+        if direction == "right" or direction == 1:
             return self.frame_list[self.current_frame]
-        if direction == "left":
+        if direction == "left" or direction == -1:
             return pygame.transform.flip(self.frame_list[self.current_frame], True, False)
 
     def end(self):

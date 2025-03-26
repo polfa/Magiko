@@ -2,6 +2,7 @@
 from abc import ABC, abstractmethod
 
 from src.common_scripts.clouds import Clouds
+from src.common_scripts.coin import Coin
 from src.enemies.enemie_manager import EnemieManager
 from src.player import Player
 from src.tilemap.tilemap import TileMap
@@ -22,6 +23,7 @@ class LevelBase(ABC):
         self.wave = None
         self.player = Player(character_name, self)
         self.clouds = Clouds("blue", count=26)
+        self.coins = []
 
     def init_tiles(self, tilemap):
         """
@@ -41,6 +43,21 @@ class LevelBase(ABC):
             if "tree" in name:
                 tile = pygame.transform.scale_by(tile, 2)
             tilemap.add_to_tile_list(name, tile)
+
+    def remove_collision_coin(self, rect):
+        for coin in self.coins:
+            if rect.colliderect(coin.rect):
+                self.coins.remove(coin)
+                return True
+        return False
+
+    def add_coin(self, pos):
+        coin = Coin("coin", pos)
+        self.coins.append(coin)
+
+    def update_coins(self, screen):
+        for coin in self.coins:
+            coin.draw(screen, self.tilemap, offset=self.player.offset)
 
     @abstractmethod
     def key_pressed(self, key):
@@ -85,6 +102,7 @@ class LevelBase(ABC):
         # update objects
         screen.fill((150, 150, 255))
         self.clouds.update(screen, offset=offset)
+        self.update_coins(screen)
         self.tilemap.render_tiles(screen, offset, (0, 0))
         self.wave.get_current_wave().update(self.player, screen)
         if self.wave.current_wave_is_empty():

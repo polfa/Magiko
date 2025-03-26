@@ -17,22 +17,31 @@ class EnemieManager:
         self.enemies.remove(enemie)
 
     def update(self, player, screen):
-        already_hit = False
+        already_hit = []
         hit = False
-        if self.player_hit and not player.is_hitting():
+        is_primary = player.state.value == "primary"
+        is_secondary = player.state.value == "secondary"
+        is_ultimate = player.state.value == "ultimate"
+        if not player.is_hitting():
             self.player_hit = False
 
-        for enemie in self.enemies:
+        enemies_copy = self.enemies.copy()
+        for enemie in enemies_copy:
             enemie.update(player, screen)
-            if already_hit or self.player_hit:
+            if enemie in already_hit or self.player_hit:
                 continue
-            is_hit, hit_type = enemie.check_player_hit(player)
+            if is_primary and len(already_hit) > 0:
+                continue
+            attack = enemie.check_player_hit(player)
+            is_hit = attack is not None
+            if not is_hit:
+                continue
             if not enemie.alive:
                 self.remove_enemie(enemie)
+
             if is_hit:
                 hit = True
-            if is_hit and hit_type == "first":
-                already_hit = True
+                already_hit.append(enemie)
         if hit:
             self.player_hit = True
 

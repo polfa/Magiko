@@ -22,13 +22,13 @@ class WavesLevel1:
         return self.waves[self.current_wave].is_empty()
 
     def get_current_wave(self):
-        print(self.current_wave, len(self.waves))
         return self.waves[self.current_wave]
 
     @staticmethod
     def wave_1(base):
         enemie_manager = EnemieManager()
-        enemie_manager.add_enemie("bad_goblin", (100, base))
+        enemie_manager.add_enemie("bad_goblin", (1600, base))
+        enemie_manager.add_enemie("bad_goblin", (1600, base))
         return enemie_manager
 
     @staticmethod

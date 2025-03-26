@@ -24,7 +24,7 @@ class Main:
         pygame.display.set_caption("Magiko")
 
         self.running = True
-        self.level_1 = Level1("level_1", "orange_superhero")
+        self.level_1 = Level1("level_1", "orange_superhero", self.screen)
 
         self.UI = UI(self.level_1)
 
@@ -55,6 +55,8 @@ class Main:
         Handle the mouse pressed event
         :param event: pygame event object
         """
+        if self.UI.is_clicked(event.pos):
+            return
         self.level_1.mouse_pressed(event)
 
     def event_manager(self):
@@ -81,8 +83,6 @@ class Main:
         if keys[pygame.K_ESCAPE]:
             self.running = False
 
-
-
     def get_level(self):
         return self.level_1
 
@@ -95,8 +95,9 @@ class Main:
             # handle the events
             self.event_manager()
 
-            # update current scene
-            self.level_1.run(self.screen)
+            if not self.UI.is_game_paused():
+                # update current scene
+                self.level_1.run(self.screen)
 
             self.UI.draw(self.screen)
 

@@ -24,6 +24,9 @@ class BasicPrimaryAttack(Attack, ABC):
     def is_area_attack(self):
         return False
 
+    def is_multihit(self):
+        return False
+
 
 class BasicSecondaryAttack(Attack, ABC):
     def __init__(self, damage, mana_cost, cooldown):
@@ -43,6 +46,8 @@ class BasicSecondaryAttack(Attack, ABC):
     def is_area_attack(self):
         return False
 
+    def is_multihit(self):
+        return True
 
 class BasicUltimateAttack(Attack, ABC):
     def __init__(self, damage, mana_cost, cooldown):
@@ -57,8 +62,11 @@ class BasicUltimateAttack(Attack, ABC):
         return self.name
 
     def get_animation_path(self, player_name):
-        return f"img/characters/{player_name}/ultimate"
+        return f"img/characters/{player_name}/basic_ultimate"
 
     def is_area_attack(self):
-        return False
+        return True
+
+    def is_multihit(self):
+        return True
 
