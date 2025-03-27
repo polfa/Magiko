@@ -11,7 +11,7 @@ from src.utils import *
 
 class LevelBase(ABC):
     @abstractmethod
-    def __init__(self, name, character_name, limits):
+    def __init__(self, name, character_name, limits, main):
         self.name = name
 
         # initialize variables
@@ -22,7 +22,7 @@ class LevelBase(ABC):
         self.tilemap.load_tile_map_from_json(self.name)
         self.wave = None
         self.player = Player(character_name, self)
-        self.clouds = Clouds("blue", count=26)
+        self.clouds = Clouds("blue", count=18)
         self.collectables = []
 
     def init_tiles(self, tilemap):
@@ -98,15 +98,14 @@ class LevelBase(ABC):
         self.player.mouse_pressed(event)
 
     @abstractmethod
-    def run(self, screen):
+    def run(self, main, screen):
         """
         Main game loop
         """
-
         offset = self.player.offset
         # update objects
         screen.fill((150, 150, 255))
-        self.clouds.update(screen, offset=offset)
+        self.clouds.render(screen, offset=offset)
         self.update_collectables(screen)
         self.tilemap.render_tiles(screen, offset, (0, 0))
         self.wave.get_current_wave().update(self.player, screen)

@@ -9,17 +9,17 @@ class Bar:
         self.width = width
         self.color = color
         self.text_color = text_color
+        self.font = pygame.font.Font(BASE_PATH + '/../fonts/ARCADE_N.ttf', 16)  # Cargar la fuente solo una vez
 
     def draw(self, screen, current_value, max_value):
-        percent = max(0, min(current_value / max_value, 1))  # Asegurar que está entre 0 y 1
-        self.rect.width = self.width * percent
-        pygame.draw.rect(screen, self.color, self.rect)
-        self.rect.width = self.width  # Restaurar tamaño original para el borde
-        pygame.draw.rect(screen, (0, 0, 0), self.rect, 2)
+        percent = max(0.0, min(current_value / max_value, 1.0))  # Asegurar que esté entre 0 y 1
+        filled_rect = pygame.Rect(self.rect.x, self.rect.y, self.width * percent, self.rect.height)
+
+        pygame.draw.rect(screen, self.color, filled_rect)  # Dibujar la barra de progreso
+        pygame.draw.rect(screen, (0, 0, 0), self.rect, 2)  # Dibujar el borde
 
         # Dibujar texto
-        font = pygame.font.Font(BASE_PATH + '/../fonts/ARCADE_N.ttf', 16)
         text = f"{current_value}/{max_value}"
-        text_render = font.render(text, True, self.text_color)
-        screen.blit(text_render, (self.rect.x + self.rect.width // 2 - font.size(text)[0] // 2,
-                                  self.rect.y + self.rect.height // 2 - font.size(text)[1] // 2))
+        text_render = self.font.render(text, True, self.text_color)
+        text_size = text_render.get_size()
+        screen.blit(text_render, (self.rect.centerx - text_size[0] // 2, self.rect.centery - text_size[1] // 2))

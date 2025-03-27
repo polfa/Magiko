@@ -10,6 +10,7 @@ class TileMap:
         self.tile_map = {}
         self.tiles = {}
         self.collision_tiles = []
+        self.light_map = []
 
     def set_collision_tiles(self, tiles):
         """
@@ -47,6 +48,30 @@ class TileMap:
         :return:
         """
         self.tile_map[pos] = name
+
+    def add_light_to_grid(self, name, pos):
+        """
+        Add a light to the grid
+        :param name: name of the light
+        :param pos: position in the grid
+        :return:
+        """
+        self.light_map.append(((pos[0], pos[1]), name))
+
+    def get_lights_name_pos(self):
+        """
+        Get the lights in the grid
+        :return:
+        """
+        return self.light_map
+
+    def remove_light_from_grid(self, pos):
+        """
+        Remove a light from the grid
+        :param pos: position in the grid
+        :return:
+        """
+        self.light_map.pop(pos)
 
     def save_tile_map_to_json(self, name):
         """

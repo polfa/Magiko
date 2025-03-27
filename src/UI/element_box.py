@@ -8,7 +8,7 @@ class ElementBox:
     def __init__(self, level, path, x, y, resize_by=1, element_number=3):
         self.element_number = element_number
         self.resize_by = resize_by
-        self.image = pygame.image.load(BASE_PATH + path + "/0.png")
+        self.image = pygame.image.load(BASE_PATH + path + "/0.png").convert()
         self.image = pygame.transform.scale_by(self.image, resize_by).convert()
         self.element_selected_images = [pygame.image.load(BASE_PATH + path + f"/{i}.png") for i in
                                         range(1, element_number + 1)]

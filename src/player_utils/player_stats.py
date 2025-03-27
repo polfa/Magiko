@@ -13,10 +13,10 @@ class PlayerStats:
             "max_mana": 20,
             "damage": 10,
             "coins": 5,
-            "speed": 4,
-            "jump_power": 10,
+            "speed": 10,
+            "jump_power": 25,
             "jump_speed": 0,
-            "jump_cooldown": 15,
+            "jump_cooldown": 6,
         }
 
         self.abilities = PlayerAbilities(self)

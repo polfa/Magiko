@@ -47,7 +47,7 @@ class Player:
         self.offset = (0, 0)
         self.limits = level.limits
         self.jump = Jump(self, jump_power=self.stats.get_jump_power(), jump_speed=self.stats.get_jump_speed(),
-                         gravity=0.2, jump_cooldown=self.stats.get_jump_cooldown())
+                         gravity=0.9, jump_cooldown=self.stats.get_jump_cooldown())
         self.collision_manager = CollisionManager()
         self.colliding = False
 
@@ -139,7 +139,7 @@ class Player:
         frame_rate = primary.frame_rate
         animation_time = frame_rate * len(primary.frame_list)
         t = (time.get_ticks() / pow(10, 3)) - self.hit_timer
-        if animation_time / 1.5 < t and self.state == States.PRIMARY:
+        if animation_time / 1.3 < t and self.state == States.PRIMARY:
             return True
         return False
 
@@ -148,7 +148,7 @@ class Player:
         frame_rate = secondary.frame_rate
         animation_time = frame_rate * len(secondary.frame_list)
         t = (time.get_ticks() / pow(10, 3)) - self.hit_timer
-        if animation_time / 1.25 < t and self.state == States.SECONDARY:
+        if animation_time / 1.01 < t and self.state == States.SECONDARY:
             return True
         return False
 
