@@ -37,5 +37,5 @@ class Lights:
                 render_positions.append((0, 0))
                 continue
             light = self.lights[i]
-            render_positions.append((light.pos[0] / 2.4 + offset[0] / 2.4 , light.pos[1] / 1.7 + offset[1]))
+            render_positions.append((light.pos[0] / 2.4 + offset[0] / 2.4 , light.pos[1] / 1.7 + offset[1] / 1.7))
         return render_positions.copy()

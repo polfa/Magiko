@@ -13,6 +13,7 @@ class Level1(LevelBase):
         self.tilemap.add_light_to_grid("blue_torch", (300.0, 900.0))
         self.tilemap.add_light_to_grid("blue_torch", (900.0, 900.0))
         self.tilemap.add_light_to_grid("blue_torch", (1500.0, 900.0))
+        self.tilemap.add_light_to_grid("blue_torch", (900.0, 400.0))
         main.set_lights(self.tilemap.get_lights_name_pos())
 
     def key_pressed(self, key):

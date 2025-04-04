@@ -8,7 +8,7 @@ from src.utils import BASE_PATH
 
 class BasicPrimaryAttack(Attack, ABC):
     def __init__(self, damage, mana_cost, cooldown):
-        icon = BASE_PATH + "/../img/UI/attacks/fist_basic_primary.png"
+        icon = BASE_PATH + "/../img/books/blue_book.png"
         image = pygame.image.load(icon)
         image.set_colorkey((0, 0, 0))
         image.set_colorkey((255, 255, 255))
@@ -31,7 +31,7 @@ class BasicPrimaryAttack(Attack, ABC):
 
 class BasicSecondaryAttack(Attack, ABC):
     def __init__(self, damage, mana_cost, cooldown):
-        icon = BASE_PATH + "/../img/UI/attacks/tornado_basic_secondary.png"
+        icon = BASE_PATH + "/../img/books/blue_book.png"
         image = pygame.image.load(icon)
         image.set_colorkey((0, 0, 0))
         image.set_colorkey((255, 255, 255))
@@ -53,7 +53,7 @@ class BasicSecondaryAttack(Attack, ABC):
 
 class BasicUltimateAttack(Attack, ABC):
     def __init__(self, damage, mana_cost, cooldown):
-        icon = BASE_PATH + "/../img/UI/attacks/sword_basic_ultimate.png"
+        icon = BASE_PATH + "/../img/books/blue_book.png"
         image = pygame.image.load(icon)
         image.set_colorkey((0, 0, 0))
         image.set_colorkey((255, 255, 255))

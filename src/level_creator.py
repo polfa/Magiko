@@ -74,16 +74,21 @@ class LevelCreator:
             mouse_pos = pygame.mouse.get_pos()
             if self.mouse_pressed["left"]:
                 tile_pos = ((mouse_pos[0] - self.offset[0]) // TILE_SIZE, (mouse_pos[1] - self.offset[1]) // TILE_SIZE)
-                if tile_pos not in self.grid.tile_map:
+                is_collision_tile = self.tile_names[self.mouse_tile] in self.grid.collision_tiles
+                if tile_pos not in self.grid.tile_map and not is_collision_tile:
                     index = self.mouse_tile
                     self.grid.add_to_grid(self.tile_names[index], tile_pos)
+                if tile_pos not in self.grid.collision_tiles and is_collision_tile:
+                    index = self.mouse_tile
+                    self.grid.add_to_collision_grid(self.tile_names[index], tile_pos)
             if self.mouse_pressed["right"]:
                 tile_pos = ((mouse_pos[0] - self.offset[0]) // TILE_SIZE, (mouse_pos[1] - self.offset[1]) // TILE_SIZE)
-                if tile_pos in self.grid.tile_map:
+                if tile_pos in self.grid.collision_tile_map:
+                    del self.grid.collision_tile_map[tile_pos]
+                elif tile_pos in self.grid.tile_map:
                     del self.grid.tile_map[tile_pos]
-
             screen = self.screen
-            self.screen.fill((150, 150, 255))
+            self.screen.fill((0, 0, 0))
             self.draw_grid_lines(screen)
             self.grid.render_tiles(screen, self.offset, optimize=True)
             self.draw_all_tile_types(screen)

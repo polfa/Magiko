@@ -11,7 +11,7 @@ class UI:
     def __init__(self, level):
         self.level = level
         self.stats = level.player.stats
-        self.attack_box = ElementBox(level, path="/../img/UI/attacks/box", x=12, y=0.60, resize_by=2, element_number=3)
+        self.attack_box = ElementBox(level, path="/../img/UI/attacks/box", x=9, y=0.60, resize_by=2, element_number=5)
         self.attack_box.set_element_image(0, lambda:self.stats.get_active_primary().icon)
         self.attack_box.set_element_image(1, lambda:self.stats.get_active_secondary().icon)
         self.attack_box.set_element_image(2, lambda:self.stats.get_active_ultimate().icon)
@@ -90,7 +90,10 @@ class UI:
             self.shop_window.mouse_move(pos)
 
     def is_clicked(self, pos):
+        is_clicked = False
+        is_clicked = self.attack_box.mouse_click(pos)
         if self.is_shop_open:
-            return self.shop_window.is_clicked(pos)
+            is_clicked = self.shop_window.is_clicked(pos) if not is_clicked else True
         else:
-            return self.shop_button.is_clicked(pos)
+            is_clicked = self.shop_button.is_clicked(pos) if not is_clicked else True
+        return is_clicked

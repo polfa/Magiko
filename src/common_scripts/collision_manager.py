@@ -38,7 +38,7 @@ class CollisionManager:
         for i in range(-1, 2):
             for j in range(-1, 2):
                 neighbour_pos = (tilemap_entity_pos[0] + i, tilemap_entity_pos[1] + j)
-                neighbour_name = tilemap.tile_map.get(neighbour_pos)
+                neighbour_name = tilemap.collision_tile_map.get(neighbour_pos)
                 if neighbour_name:
                     neighbour_tiles[neighbour_pos] = neighbour_name
         return neighbour_tiles
@@ -55,7 +55,7 @@ class CollisionManager:
         neighbour_tiles = {}
         for i in range(0, 2):
             neighbour_pos = (tilemap_entity_pos[0] + i, tilemap_entity_pos[1] + 1)
-            neighbour_name = tilemap.tile_map.get(neighbour_pos)
+            neighbour_name = tilemap.collision_tile_map.get(neighbour_pos)
             if neighbour_name:
                 neighbour_tiles[neighbour_pos] = neighbour_name
         return neighbour_tiles

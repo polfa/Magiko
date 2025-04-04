@@ -104,7 +104,7 @@ class LevelBase(ABC):
         """
         offset = self.player.offset
         # update objects
-        screen.fill((150, 150, 255))
+        screen.fill((0, 0, 0))
         self.clouds.render(screen, offset=offset)
         self.update_collectables(screen)
         self.tilemap.render_tiles(screen, offset, (0, 0))

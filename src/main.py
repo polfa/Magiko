@@ -34,7 +34,7 @@ out vec4 f_color;
 
 void main() {
     // Calcular la distancia desde la posición de cada luz a la posición actual del fragmento
-    vec2 screen_size = vec2(800.0, 600.0); // Tamaño de la pantalla
+    vec2 screen_size = vec2(800.0, 600.0); // Tamaño de la pantalla 
     vec2 frag_position = uvs * screen_size; // Posición de fragmento en píxeles
 
     vec4 tex_color = texture(tex, uvs);
@@ -123,8 +123,9 @@ class Main:
         Handle the mouse pressed event
         :param event: pygame event object
         """
-        if self.UI.is_clicked(event.pos):
-            return
+        if event.button == 1:
+            if self.UI.is_clicked(event.pos):
+                return
         self.level_1.mouse_pressed(event)
 
     def event_manager(self):

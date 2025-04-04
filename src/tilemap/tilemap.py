@@ -10,6 +10,7 @@ class TileMap:
         self.tile_map = {}
         self.tiles = {}
         self.collision_tiles = []
+        self.collision_tile_map = {}
         self.light_map = []
 
     def set_collision_tiles(self, tiles):
@@ -49,6 +50,15 @@ class TileMap:
         """
         self.tile_map[pos] = name
 
+    def add_to_collision_grid(self, name, pos):
+        """
+        Add a tile to the collision grid
+        :param name: name of the tile (key)
+        :param pos: position in the grid
+        :return:
+        """
+        self.collision_tile_map[pos] = name
+
     def add_light_to_grid(self, name, pos):
         """
         Add a light to the grid
@@ -81,9 +91,16 @@ class TileMap:
         """
         with open(f"../saves/maps/{name}.json", 'w') as file:
             save = {}
+            save_grid = {}
             for key, value in self.tile_map.items():
                 pos_str = f"{key[0]};{key[1]}"
-                save[pos_str] = value
+                save_grid[pos_str] = value
+            save_collision_grid = {}
+            for key, value in self.collision_tile_map.items():
+                pos_str = f"{key[0]};{key[1]}"
+                save_collision_grid[pos_str] = value
+            save["grid"] = save_grid
+            save["collision_grid"] = save_collision_grid
             json.dump(save, file)
             print("Map saved")
 
@@ -95,9 +112,13 @@ class TileMap:
         """
         with open(f"../saves/maps/{name}.json", 'r') as file:
             save = json.load(file)
-            for key, value in save.items():
-                pos = tuple(map(int, key.split(";")))
-                self.add_to_grid(value, pos)
+            for key, value in save["grid"].items():
+                pos = key.split(";")
+                self.tile_map[(int(pos[0]), int(pos[1]))] = value
+            for key, value in save["collision_grid"].items():
+                pos = key.split(";")
+                self.collision_tile_map[(int(pos[0]), int(pos[1]))] = value
+
             print("Map loaded")
 
     def render_tiles(self, screen, offset, optimize=True):
@@ -110,6 +131,9 @@ class TileMap:
         """
         if optimize:
             for pos, tile in self.tile_map.items():
+                if not (pos[0] + 3) * TILE_SIZE + offset[0] < 0 or (pos[0] - 3) * TILE_SIZE + offset[0] > WIDTH:
+                    screen.blit(self.tiles[tile], (pos[0] * TILE_SIZE + offset[0], pos[1] * TILE_SIZE + offset[1]))
+            for pos, tile in self.collision_tile_map.items():
                 if not (pos[0] + 3) * TILE_SIZE + offset[0] < 0 or (pos[0] - 3) * TILE_SIZE + offset[0] > WIDTH:
                     screen.blit(self.tiles[tile], (pos[0] * TILE_SIZE + offset[0], pos[1] * TILE_SIZE + offset[1]))
             return
