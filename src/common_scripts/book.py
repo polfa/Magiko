@@ -1,20 +1,21 @@
 import pygame
 
-from src.utils import TILE_SIZE, BASE_PATH
+from src.utils import TILE_SIZE, BASE_PATH, WIDTH, HEIGHT
 
 
 class Book:
     def __init__(self, name, pos, image_path, cover_path):
         self.name = name
-        self.pos = [pos[0], pos[1] + TILE_SIZE]
+        self.pos = [pos[0], pos[1]]
         self.image = pygame.image.load(image_path)
-        self.image = pygame.transform.scale(self.image, (128, 128))
+        scale = (WIDTH / 1920, HEIGHT / 1080)
+        self.image = pygame.transform.scale(self.image, (128 * scale[0], 128 *scale[1]))
         self.image.set_colorkey((0, 0, 0))
         self.rect = pygame.Rect(self.pos[0], self.pos[1], self.image.get_width(), self.image.get_height())
         self.book_cover_image = pygame.image.load(BASE_PATH + "/../img/books/covers/flower_mariachi.png").convert()
-        self.book_cover_image = pygame.transform.scale(self.book_cover_image, (TILE_SIZE * 2, TILE_SIZE * 2)).convert()
+        self.book_cover_image = pygame.transform.scale(self.book_cover_image, (TILE_SIZE * 2 * scale[0], TILE_SIZE * 2 * scale[1])).convert()
         self.book_cover_image.set_colorkey((0, 0, 0))
-        self.cover_offset = (5, -10)
+        self.cover_offset = (5 * scale[0], -10 * scale[1])
         self.in_mouse = False
         self.in_box = True
         self.box_index = -1

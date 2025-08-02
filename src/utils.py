@@ -24,7 +24,7 @@ BEIGE = (222, 184, 135)
 DARK_BEIGE = (139, 115, 85)
 
 # Screen size
-WIDTH, HEIGHT = 1920, 1080
+WIDTH, HEIGHT = 1424, 801
 
 # Tile size
 TILE_SIZE = 64

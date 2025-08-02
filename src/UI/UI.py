@@ -11,20 +11,21 @@ class UI:
     def __init__(self, level):
         self.level = level
         self.stats = level.player.stats
-        self.attack_box = ElementBox(level, path="/../img/UI/attacks/box", x=9, y=0.60, resize_by=2, element_number=5)
+        scale = (WIDTH / 1920, HEIGHT / 1080)
+        self.attack_box = ElementBox(level, path="/../img/UI/attacks/box", x=9 * scale[0], y=0.60 * scale[0], resize_by=2*scale[0], element_number=5)
         self.attack_box.set_element_image(0, lambda:self.stats.get_active_primary().icon)
         self.attack_box.set_element_image(1, lambda:self.stats.get_active_secondary().icon)
         self.attack_box.set_element_image(2, lambda:self.stats.get_active_ultimate().icon)
-        self.mana_bar = Bar(TILE_SIZE * 23, TILE_SIZE * 1, TILE_SIZE * 6, TILE_SIZE // 3, ELECTRIC_BLUE, MAROON)
-        self.health_bar = Bar(TILE_SIZE * 23, TILE_SIZE * 0.5, TILE_SIZE * 6, TILE_SIZE // 3, MAROON, ELECTRIC_BLUE)
+        self.mana_bar = Bar(TILE_SIZE * 23 * scale[0], TILE_SIZE * 1 * scale[1], TILE_SIZE * 6 * scale[0], TILE_SIZE // 3 * scale[1], ELECTRIC_BLUE, MAROON)
+        self.health_bar = Bar(TILE_SIZE * 23 * scale[0], TILE_SIZE * 0.5 * scale[1], TILE_SIZE * 6 * scale[0], (TILE_SIZE // 3) * scale[1], MAROON, ELECTRIC_BLUE)
         self.coin_image = pygame.image.load(BASE_PATH + "/../img/assets/coin.png").convert()
         self.coin_image = pygame.transform.scale(self.coin_image, (TILE_SIZE, TILE_SIZE))
-        self.button_size = 30
-        self.shop_button = Button(" ", TILE_SIZE * 0.5, TILE_SIZE * 1.75, self.button_size, DARK_BROWN, lambda: self.open_shop(), text_color=ELECTRIC_BLUE)
+        self.button_size = int(30 * scale[0])
+        self.shop_button = Button(" ", TILE_SIZE * 0.5 * scale[0], TILE_SIZE * 1.75 * scale[1], self.button_size, DARK_BROWN, lambda: self.open_shop(), text_color=ELECTRIC_BLUE)
         self.shop_window = ShopWindow(self, self.level)
-        self.settings_button = Button(" ", TILE_SIZE * 0.5, TILE_SIZE * 0.75, self.button_size, DARK_BROWN, lambda: self.open_settings(), text_color=ELECTRIC_BLUE)
+        self.settings_button = Button(" ", TILE_SIZE * 0.5 * scale[0], TILE_SIZE * 0.75 * scale[1], self.button_size, DARK_BROWN, lambda: self.open_settings(), text_color=ELECTRIC_BLUE)
         self.is_shop_open = False
-        self.height = HEIGHT // 5
+        self.height = (HEIGHT // 5) * scale[0]
         self.top_rect = pygame.surface.Surface((WIDTH, HEIGHT // 5)).convert()
         self.top_rect.set_alpha(245)  # Ajusta la transparencia (0 = totalmente transparente, 255 = opaco)
         self.top_rect.fill(BEIGE)  # Color negro con opacidad
