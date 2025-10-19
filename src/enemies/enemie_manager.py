@@ -45,8 +45,10 @@ class EnemieManager:
                     player.level.add_mana_potion(enemie.pos)
                 elif random == 2:
                     player.level.add_health_potion(enemie.pos)
-                elif random > 2:
+                elif 2 < random <= 4:
                     player.level.add_coin(enemie.pos)
+                else:
+                    player.level.add_xp_shard(enemie.pos, player)
                 self.remove_enemie(enemie)
 
             if is_hit:

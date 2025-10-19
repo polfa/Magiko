@@ -36,14 +36,15 @@ class BadGoblin:
         self.pos = pos
         self.initial_pos = (pos[0], pos[1])
         self.speed = Random().random() / 4 + 1.7
-        self.animations = {State.TRACKING: Animation("img/characters/bad_goblin/tracking", 0.05),
-                           State.HIT: Animation("img/characters/bad_goblin/hit", 0.02, False)}
+        self.attack_time = 20
+        self.animations = {State.TRACKING: Animation("img/characters/bad_goblin/tracking", 1/self.attack_time),
+                           State.HIT: Animation("img/characters/bad_goblin/hit", 0.01, False)}
         self.size = TILE_SIZE
         self.direction = 1
         self.state = State.TRACKING
         self.alive = True
         self.hit_timer = 0
-        self.jump = Jump(self, jump_power=5, gravity=0.2)
+        self.jump = Jump(self, jump_power=15, gravity=0.9)
         self.stop = False
 
         self.total_life = 15
@@ -61,16 +62,13 @@ class BadGoblin:
 
     def move(self, player):
         limits = player.limits
-        if self.pos[0] < limits["left"] and self.direction == -1:
-            self.pos = (self.pos[0] + self.speed, self.pos[1])
-            if self.direction != -1:
-                self.jump.start_jump(self)
-            self.direction = self.direction * -1
-        elif self.pos[0] > limits["right"] and self.direction == 1:
-            self.pos = (self.pos[0] - self.speed, self.pos[1])
-            if self.direction != 1:
-                self.jump.start_jump(self)
-            self.direction = self.direction * -1
+        if player.pos[0] < self.pos[0]:
+            self.direction = -1
+        else:
+            self.direction = 1
+
+        if random.random() < 0.01:
+            self.jump.start_jump()
 
         self.pos = (self.pos[0] + self.speed * self.direction, self.pos[1])
 
@@ -93,7 +91,7 @@ class BadGoblin:
             self.state = State.HIT
         # if goblin hits the player, make player lose health and move the goblin
         elif self.animations[self.state] == self.animations[State.HIT]:
-            if self.hit_timer > 70 and collision:
+            if self.hit_timer > self.attack_time and collision:
                 self.hit_timer = 0
                 player.stats.add_health(-self.damage)
                 self.pos = (self.pos[0] - self.size * self.direction, self.pos[1])

@@ -4,13 +4,13 @@ from src.player_utils.attacks.basic import *
 class PlayerAbilities:
     def __init__(self, player):
         self.primaries = {
-            "basic_primary": BasicPrimaryAttack(damage=5, mana_cost=1, cooldown=1),
+            "basic_primary": BasicPrimaryAttack(damage=5, mana_cost=0, cooldown=1),
             # "fireball": Fireball(player),
             # "lightning": Lightning(player),
         }
 
         self.secondaries = {
-            "basic_secondary": BasicSecondaryAttack(damage=10, mana_cost=2, cooldown=3),
+            "basic_secondary": BasicSecondaryAttack(damage=10, mana_cost=10, cooldown=3),
             # "fireball": Fireball(player),
             # "lightning": Lightning(player),
         }

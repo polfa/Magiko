@@ -110,6 +110,9 @@ class PlayerStats:
             if self.stats["health"] + value < 0:
                 self.stats["health"] = 0
                 return
+            elif (self.stats["health"] + value) > self.stats["max_health"]:
+                self.stats["health"] = self.stats["max_health"]
+                return
 
         self.stats["health"] += value
 
@@ -117,6 +120,10 @@ class PlayerStats:
         if value < 0:
             if self.stats["mana"] + value < 0:
                 self.stats["mana"] = 0
+                return
+            elif (self.stats["mana"] + value) > self.stats["max_mana"]:
+                self.stats["mana"] = self.stats["max_mana"]
+                return
 
         self.stats["mana"] += value
 
