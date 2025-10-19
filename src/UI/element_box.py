@@ -2,8 +2,7 @@ import pygame
 
 from src.UI.InfoPlane import InfoPlane
 from src.common_scripts.book import Book
-from src.utils import BASE_PATH, TILE_SIZE
-
+from src.utils import BASE_PATH, TILE_SIZE, WIDTH, HEIGHT
 
 
 class ElementBox:
@@ -24,13 +23,15 @@ class ElementBox:
         self.shadow_surface.fill((10, 10, 10))
         self.books = []
         self.init_books()
+        self.scale = (WIDTH / 1920, HEIGHT / 1080)
 
     def init_books(self):
-        self.books = [Book("blue_book", (self.pos[0] + 8, self.pos[1] - 56), BASE_PATH + "/../img/books/blue_book.png", BASE_PATH + "/../img/books/covers/flower_mariachi.png"),
-                      Book("red_book", (self.pos[0] + TILE_SIZE * 2 + 9*2, self.pos[1] - 56), BASE_PATH + "/../img/books/red_book.png", BASE_PATH + "/../img/books/covers/flower_mariachi.png"),
-                      Book("green_book", (self.pos[0] + TILE_SIZE * 4 + 9*3, self.pos[1] - 56), BASE_PATH + "/../img/books/green_book.png", BASE_PATH + "/../img/books/covers/flower_mariachi.png"),
-                      Book("yellow_book", (self.pos[0] + TILE_SIZE * 6 + 9*4, self.pos[1] - 56), BASE_PATH + "/../img/books/yellow_book.png", BASE_PATH + "/../img/books/covers/flower_mariachi.png"),
-                      Book("purple_book", (self.pos[0] + TILE_SIZE * 8 + 9*5, self.pos[1] - 56), BASE_PATH + "/../img/books/purple_book.png", BASE_PATH + "/../img/books/covers/flower_mariachi.png")]
+        scale =(WIDTH / 1920, HEIGHT / 1080)
+        self.books = [Book("blue_book", (self.pos[0], self.pos[1] + 10 * scale[1]), BASE_PATH + "/../img/books/blue_book.png", BASE_PATH + "/../img/books/covers/flower_mariachi.png"),
+                      Book("red_book", (self.pos[0] + 140 * 1 * scale[0], self.pos[1] + 10 * scale[1]), BASE_PATH + "/../img/books/red_book.png", BASE_PATH + "/../img/books/covers/flower_mariachi.png"),
+                      Book("green_book", (self.pos[0] + 140 * 2 * scale[0], self.pos[1] + 10 * scale[1]), BASE_PATH + "/../img/books/green_book.png", BASE_PATH + "/../img/books/covers/flower_mariachi.png"),
+                      Book("yellow_book", (self.pos[0] + 140 * 3 * scale[0], self.pos[1] + 10 * scale[1]), BASE_PATH + "/../img/books/yellow_book.png", BASE_PATH + "/../img/books/covers/flower_mariachi.png"),
+                      Book("purple_book", (self.pos[0] + 140 * 4 * scale[0], self.pos[1] + 10 * scale[1]), BASE_PATH + "/../img/books/purple_book.png", BASE_PATH + "/../img/books/covers/flower_mariachi.png")]
         for index in range(len(self.books)):
             self.books[index].box_index = index
 

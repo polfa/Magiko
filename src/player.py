@@ -44,7 +44,7 @@ class Player:
         self.initial_pos = (self.pos[0], self.pos[1])
         self.direction = Direction.RIGHT
         self.speed = self.stats.get_speed()
-        self.offset = (0, 0)
+        self.offset = (0, -1000)
         self.limits = level.limits
         self.jump = Jump(self, jump_power=self.stats.get_jump_power(), jump_speed=self.stats.get_jump_speed(),
                          gravity=0.9, jump_cooldown=self.stats.get_jump_cooldown())
@@ -200,7 +200,7 @@ class Player:
                 self.stats.add_health(collectable.value)
 
         # update the offset, jump logic, animation and render the player
-        self.offset = (self.offset[0], -(self.pos[1] - self.initial_pos[1]) // 2)
+        self.offset = (self.offset[0], -((self.pos[1] + HEIGHT//2) - self.initial_pos[1]) // 2)
         self.jump.update(self)
         self.animations[self.state].update()
         self.render(screen)
