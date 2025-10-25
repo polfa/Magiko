@@ -6,6 +6,7 @@ from src.UI.UI import UI
 from src.common_scripts.lights import Lights
 from src.levels.level_1.level_1 import Level1
 from src.shaders.lightShader import LightShader
+from src.shaders.uiShader import UIShader
 from utils import *
 from array import array
 import moderngl
@@ -31,15 +32,20 @@ class Main:
         self.display = pygame.Surface((WIDTH, HEIGHT))
         self.ui_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
 
+        # --- Contexto OpenGL ModernGL ---
         self.ctx = moderngl.create_context()
+        self.ctx.enable(moderngl.BLEND)
+        self.ctx.blend_func = (moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA)
+
+        # --- Shaders ---
         self.lightShader = LightShader(self.ctx)
+        self.uiShader = UIShader(self.ctx)
 
         self.running = True
         self.lights = Lights()
         self.level_1 = Level1("level_1", "orange_superhero", self.screen, self)
         self.UI = UI(self.level_1)
         self.max_lights = 8
-        self.t = 0
 
     def key_pressed(self, keys):
         """
@@ -106,24 +112,36 @@ class Main:
     def set_lights(self, lights):
         self.lights.set_lights(lights)
 
+
     def run(self):
         while self.running:
-            init_time = pygame.time.get_ticks() / 1000.0
-            self.event_manager()
-            self.t += 1
+            # Antes de self.lightShader.render(...)
+            self.ctx.clear(0.0, 0.0, 0.0, 1.0)
 
+            self.event_manager()
+
+            # --- Render juego base ---
             if not self.UI.is_game_paused():
                 self.level_1.run(self, self.display)
-            final_time = pygame.time.get_ticks() / 1000.0
+
             offset = self.level_1.player.offset
             self.lights.blit_lights(self.display, offset)
+            # ...
             light_positions = self.lights.get_render_positions(offset, self.max_lights)
-            light_colors = [(1.0, 1.0, 1.0)] * self.max_lights
-            self.UI.draw(self.display)
-            # Render shader -> pinta sobre la pantalla OpenGL
-            self.lightShader.render(self.display, offset, light_positions, light_colors)
-            # Ahora dibuja la UI encima del frame final
+            light_colors = [(1.0, 1.0, 1.0)] * len(light_positions)
 
+            # Ejemplo: radios distintos por luz (en píxeles)
+            radii = [300.0] * len(light_positions)
+            # Intensidades (1.0 = normal, 2.0 = más brillante, etc.)
+            strengths = [1.2] * len(light_positions)
+
+            self.lightShader.render(self.display, light_positions, light_colors, radii, strengths)
+            # ...
+
+            # --- 2) Render UI (encima, con transparencia) ---
+            self.ui_surface.fill((0, 0, 0, 0))
+            self.UI.draw(self.ui_surface)
+            self.uiShader.render(self.ui_surface)
 
             pygame.display.flip()
             self.clock.tick(FPS)
@@ -135,4 +153,3 @@ class Main:
 if __name__ == "__main__":
     main = Main()
     main.run()
-    main.game_texture.release()

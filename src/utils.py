@@ -86,6 +86,9 @@ def draw_transparent_rect(surface, color, rect, alpha):
     temp_surface.fill((*color, alpha))
     surface.blit(temp_surface, rect.topleft)
 
+def surf_to_texture(surf, tex):
+    tex.write(surf.get_view('1'))
+    return tex
 
 def load_gif_frames(gif_path):
     gif = Image.open(gif_path)
