@@ -1,5 +1,5 @@
 import pygame
-from src.utils import BASE_PATH
+from src.utils import BASE_PATH, TILE_SIZE
 
 
 class PointLight:
@@ -37,5 +37,5 @@ class Lights:
                 render_positions.append((0, 0))
                 continue
             light = self.lights[i]
-            render_positions.append((light.pos[0] / 2.4 + offset[0] / 2.4 , light.pos[1] / 1.7 + offset[1] / 1.7))
+            render_positions.append((light.pos[0] + offset[0] + TILE_SIZE // 2 , light.pos[1] + offset[1] + TILE_SIZE // 2))
         return render_positions.copy()

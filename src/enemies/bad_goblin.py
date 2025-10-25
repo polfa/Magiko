@@ -37,8 +37,8 @@ class BadGoblin:
         self.initial_pos = (pos[0], pos[1])
         self.speed = Random().random() / 4 + 1.7
         self.attack_time = 20
-        self.animations = {State.TRACKING: Animation("img/characters/bad_goblin/tracking", 1/self.attack_time),
-                           State.HIT: Animation("img/characters/bad_goblin/hit", 0.01, False)}
+        self.animations = {State.TRACKING: Animation("img/characters/bad_goblin/tracking", 0.05),
+                           State.HIT: Animation("img/characters/bad_goblin/hit", self.attack_time / 1000, False)}
         self.size = TILE_SIZE
         self.direction = 1
         self.state = State.TRACKING

@@ -6,7 +6,7 @@ from src.utils import *
 class Level1(LevelBase):
 
     def __init__(self,  name, character_name, screen, main):
-        limits = {"left": 0, "right": WIDTH + TILE_SIZE * 2}
+        limits = {"left": 0, "right": WIDTH * 2}
         super().__init__(name, character_name, limits, main)
         self.wave = WavesLevel1(self.player.initial_pos[1])
         self.screen = screen
