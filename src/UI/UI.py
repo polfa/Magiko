@@ -13,13 +13,8 @@ class UI:
         self.stats = level.player.stats
         scale = (WIDTH / 1920, HEIGHT / 1080)
         self.attack_box = ElementBox(level, path="/../img/UI/attacks/box", x=9 * scale[0], y=0.60 * scale[0], resize_by=2*scale[0], element_number=5)
-        self.attack_box.set_element_image(0, lambda:self.stats.get_active_primary().icon)
-        self.attack_box.set_element_image(1, lambda:self.stats.get_active_secondary().icon)
-        self.attack_box.set_element_image(2, lambda:self.stats.get_active_ultimate().icon)
         self.mana_bar = Bar(TILE_SIZE * 23 * scale[0], TILE_SIZE * 1 * scale[1], TILE_SIZE * 6 * scale[0], TILE_SIZE // 3 * scale[1], ELECTRIC_BLUE, MAROON)
         self.health_bar = Bar(TILE_SIZE * 23 * scale[0], TILE_SIZE * 0.5 * scale[1], TILE_SIZE * 6 * scale[0], (TILE_SIZE // 3) * scale[1], MAROON, ELECTRIC_BLUE)
-        self.coin_image = pygame.image.load(BASE_PATH + "/../img/assets/coin.png").convert()
-        self.coin_image = pygame.transform.scale(self.coin_image, (TILE_SIZE, TILE_SIZE))
         self.button_size = int(30 * scale[0])
         self.shop_button = Button(" ", TILE_SIZE * 0.5 * scale[0], TILE_SIZE * 1.75 * scale[1], self.button_size, DARK_BROWN, lambda: self.open_shop(), text_color=ELECTRIC_BLUE)
         self.shop_window = ShopWindow(self, self.level)
@@ -40,6 +35,9 @@ class UI:
         self.shop_cart_img.set_colorkey((0, 0, 0))
         self.nut_resized = pygame.transform.scale(self.beige_nut_img, (TILE_SIZE, TILE_SIZE))
         self.border_rect = pygame.Rect(0, 0, self.top_rect.get_width(), self.top_rect.get_height())
+        self.coin_image = pygame.image.load(BASE_PATH + "/../img/assets/blue_coin.png").convert()
+        self.coin_image.set_colorkey((0,0,0))
+        self.coin_image = pygame.transform.scale(self.coin_image, (TILE_SIZE * 2 * scale[0], TILE_SIZE * 2 * scale[1]))
 
     def open_settings(self):
         pass
@@ -73,16 +71,17 @@ class UI:
         self.draw_assets(screen)
 
     def draw_assets(self, screen):
-        # draw coins
-        font = pygame.font.Font(BASE_PATH + "/../fonts/ARCADE_N.TTF", 40)
-        t = str(self.stats.get_stat("coins"))
-        text = font.render(t, True, DARK_BROWN)
-        screen.blit(self.coin_image, (TILE_SIZE * 28, TILE_SIZE * 1.75))
-        screen.blit(text, (TILE_SIZE * 28 - font.size(t)[0] - 10, TILE_SIZE * 2))
+        scale = (WIDTH / 1920, HEIGHT / 1080)
         screen.blit(self.nut_img, (self.mana_bar.rect.x - TILE_SIZE / 1.8, self.mana_bar.rect.y))
         screen.blit(self.heart_img, (self.health_bar.rect.x - TILE_SIZE / 1.8, self.health_bar.rect.y))
         screen.blit(self.nut_resized, (self.settings_button.rect.x + 10, self.settings_button.rect.y + 5))
         screen.blit(self.shop_cart_img, (self.shop_button.rect.x + 14, self.shop_button.rect.y + 5))
+        # draw coins
+        font = pygame.font.Font(BASE_PATH + "/../fonts/ARCADE_N.TTF", 40)
+        t = str(self.stats.get_stat("coins"))
+        text = font.render(t, True, DARK_BROWN)
+        screen.blit(self.coin_image, (TILE_SIZE * 27.5 * scale[0], TILE_SIZE * 1.75 * scale[1]))
+        screen.blit(text, (TILE_SIZE * 28 * scale[0] - font.size(t)[0] - 10, TILE_SIZE * 2 * scale[1]))
 
     def mouse_move(self, pos):
         self.attack_box.mouse_move(pos)

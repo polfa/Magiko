@@ -1,5 +1,9 @@
+import random
+
 import pygame
-from src.utils import BASE_PATH
+
+from src.common_scripts.animation import Animation
+from src.utils import BASE_PATH, WIDTH
 
 
 class PointLight:
@@ -9,7 +13,13 @@ class PointLight:
         self.image = None
         if name == "blue_torch":
             self.image = pygame.image.load(BASE_PATH + "/../img/assets/blue_torch.png").convert()
+            self.animation = Animation("img/assets/blue_torch", 0.1, loop=True, scale=1)
             self.image.set_colorkey((0, 0, 0))
+
+    def draw(self, screen, offset):
+        if self.animation is not None:
+            self.animation.update()
+            screen.blit(self.animation.get_current_frame(), (self.pos[0] + offset[0], self.pos[1] + offset[1]))
 
 
 class Lights:
@@ -28,14 +38,15 @@ class Lights:
 
     def blit_lights(self, screen, offset):
         for light in self.lights:
-            screen.blit(light.image, (light.pos[0] + offset[0], light.pos[1] + offset[1]))
+            light.draw(screen, offset)
 
     def get_render_positions(self, offset, max_lights):
         render_positions = []
+        scale = WIDTH / 1920
         for i in range(max_lights):
             if i >= len(self.lights):
                 render_positions.append((0, 0))
                 continue
             light = self.lights[i]
-            render_positions.append((light.pos[0] / 2.4 + offset[0] / 2.4 , light.pos[1] / 1.7 + offset[1] / 1.7))
+            render_positions.append((light.pos[0] / (2.35 * scale) + offset[0] / (2.4 * scale), light.pos[1] / (1.7 * scale) + offset[1] / (1.7 * scale)))
         return render_positions.copy()

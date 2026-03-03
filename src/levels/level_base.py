@@ -106,9 +106,9 @@ class LevelBase(ABC):
         # update objects
         screen.fill((0, 0, 0))
         self.clouds.render(screen, offset=offset)
-        self.update_collectables(screen)
         self.tilemap.render_tiles(screen, offset, (0, 0))
         self.wave.get_current_wave().update(self.player, screen)
+        self.update_collectables(screen)
         if self.wave.is_current_wave_over():
             if self.wave.next_wave() is False:
                 self.running = False

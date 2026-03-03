@@ -6,13 +6,13 @@ from src.utils import TILE_SIZE
 
 
 class Collectable:
-    def __init__(self, name, pos, value, image_path):
+    def __init__(self, name, pos, value, image_path, resize=1):
         self.name = name
         self.pos = [pos[0], pos[1] + TILE_SIZE]
         self.initial_pos = pos
         self.value = value
         self.image = pygame.image.load(image_path)
-        self.image = pygame.transform.scale(self.image, (32, 32))
+        self.image = pygame.transform.scale(self.image, (32 * resize, 32 * resize))
         self.image.set_colorkey((0, 0, 0))
         self.rect = pygame.Rect(self.pos[0], self.pos[1] - TILE_SIZE, self.image.get_width() // 4, self.image.get_height() // 4)
 

@@ -58,6 +58,16 @@ void main() {
 }
 '''
 
+# Shader simple para la UI (sin luces)
+frag_ui = '''
+#version 330 core
+in vec2 uvs;
+uniform sampler2D tex;
+out vec4 f_color;
+void main() {
+    f_color = texture(tex, uvs);
+}
+'''
 
 class Main:
     def __init__(self):
@@ -90,6 +100,18 @@ class Main:
         self.game_texture = self.ctx.texture((WIDTH, HEIGHT), 4, data=None)
         self.game_texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
         self.game_texture.swizzle = 'BGRA'
+
+        # Surfaces
+        self.world_surface = pygame.Surface((WIDTH, HEIGHT))
+        self.ui_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)  # alpha para la UI
+
+        # Texturas GPU
+        self.ui_texture = self.ctx.texture((WIDTH, HEIGHT), 4, data=None)
+        self.ui_texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        self.ui_texture.swizzle = 'BGRA'
+
+        self.ui_program = self.ctx.program(vertex_shader=vert_shader, fragment_shader=frag_ui)
+        self.ui_vao = self.ctx.vertex_array(self.ui_program, [(self.quad_buffer, '2f 2f', 'vert', 'texcoord')])
 
 
     def surf_to_texture(self, surf, tex):
@@ -165,31 +187,50 @@ class Main:
 
     def run(self):
         while self.running:
-            init_time = pygame.time.get_ticks() / 1000.0
             self.event_manager()
-            self.t += 1
 
+            # --- 1) Dibujar mundo en world_surface ---
+            self.world_surface.fill((0,0,0))
             if not self.UI.is_game_paused():
-                self.level_1.run(self, self.display)
-            final_time = pygame.time.get_ticks() / 1000.0
+                self.level_1.run(self, self.world_surface)
             offset = self.level_1.player.offset
-            self.lights.blit_lights(self.display, offset)
-            self.UI.draw(self.display)
+            self.lights.blit_lights(self.world_surface, offset)
             light_positions = self.lights.get_render_positions(offset, self.max_lights)
             light_decay = [10000.0] * 8
-            game_tex = self.surf_to_texture(self.display, self.game_texture)
-            game_tex.use(0)
 
+            # --- 2) Subir world_surface a GPU ---
+            self.game_texture.write(self.world_surface.get_view('1'))
+            self.game_texture.use(location=0)
             self.program['tex'] = 0
             self.program['light_positions'] = light_positions
             self.program['light_decay'] = light_decay
 
+            # --- 3) Render con shader de luces al framebuffer por defecto (la pantalla) ---
+            # Asegúrate de usar el programa que tiene el shader de luces
             self.render_object.render(mode=moderngl.TRIANGLE_STRIP)
+
+            # --- 4) Dibujar UI sobre la pantalla (sin luz) ---
+            # Limpiar ui_surface y dibujar UI con tus métodos (usar transparencia)
+            self.ui_surface.fill((0,0,0,0))  # transparente
+            self.UI.draw(self.ui_surface)    # ahora la UI se dibuja en la surface
+
+            # Subir UI a GPU y render sobre el quad usando ui_program (sin modificar colores)
+            self.ui_texture.write(self.ui_surface.get_view('1'))
+            self.ui_texture.use(location=0)
+            self.ui_program['tex'] = 0
+
+            # Habilitar blending para respetar alpha de la UI
+            self.ctx.enable(moderngl.BLEND)
+            self.ctx.blend_func = (moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA)
+
+            self.ui_vao.render(mode=moderngl.TRIANGLE_STRIP)
+
+            # Desactivar blending si quieres
+            self.ctx.disable(moderngl.BLEND)
+
             pygame.display.flip()
             self.clock.tick(FPS)
 
-        pygame.quit()
-        sys.exit()
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@ from src.utils import BASE_PATH
 
 
 class Animation:
-    def __init__(self, dir_path, frame_rate, loop=True):
+    def __init__(self, dir_path, frame_rate, loop=True, scale=2):
         """
         Animation class constructor
         :param dir_path: path to the directory containing the frames
@@ -15,7 +15,7 @@ class Animation:
         """
 
         # load the frames from the directory and set the initial values
-        self.frame_list = self.load_frames(dir_path)
+        self.frame_list = self.load_frames(dir_path, scale)
         self.current_frame = 0
         self.frame_rate = frame_rate
         self.last_update_time = time.time()
@@ -23,7 +23,7 @@ class Animation:
         self.active = True
 
     @staticmethod
-    def load_frames(dir_path) -> list[pygame.Surface]:
+    def load_frames(dir_path, scale) -> list[pygame.Surface]:
         """
         Load the frames from the directory
         :param dir_path: path to the directory containing the frames
@@ -37,7 +37,7 @@ class Animation:
         for file in os.listdir(dir_path):
             if file.endswith(".png"):
                 img = pygame.image.load(os.path.join(dir_path, file))
-                img = pygame.transform.scale_by(img, 2).convert()
+                img = pygame.transform.scale_by(img, scale).convert()
                 img.set_colorkey((0, 0, 0))
                 frames.append(img)
 
@@ -67,7 +67,7 @@ class Animation:
                     self.current_frame = (self.current_frame + 1) % len(self.frame_list)
                     self.last_update_time = current_time
 
-    def get_current_frame(self, direction):
+    def get_current_frame(self, direction="right"):
         """
         Get the current frame
         :param direction: the direction of the animation ("right" or "left")

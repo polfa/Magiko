@@ -10,8 +10,8 @@ from src.utils import BASE_PATH, TILE_SIZE
 class Coin(Collectable):
     def __init__(self, pos, value):
         name = "coin"
-        image_path = BASE_PATH + "/../img/assets/coin.png"
-        super().__init__(name, pos, value, image_path)
+        image_path = BASE_PATH + "/../img/assets/blue_coin.png"
+        super().__init__(name, pos, value, image_path, resize=2)
 
 
 class HealthPotion(Collectable):
