@@ -28,6 +28,10 @@ class Collectable:
     def get_pos(self):
         return self.pos
 
+    def rotate(self, angle):
+        """Rotate the collectable image by the given angle."""
+        self.image = pygame.transform.rotate(self.image, angle)
+
     def update(self, tilemap):
         self.pos = self.initial_pos[0], math.sin(pygame.time.get_ticks() / 100) * 10 + self.initial_pos[1]
 

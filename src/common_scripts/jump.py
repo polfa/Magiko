@@ -24,7 +24,7 @@ class Jump:
     def is_jumping(self):
         return self.jumping
 
-    def start_jump(self, entity):
+    def start_jump(self):
         if self.no_jump_time == self.cooldown and not self.jumping:
             self.jumping = True
             self.no_jump_time = 0

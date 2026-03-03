@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 
 from src.common_scripts.clouds import Clouds
-from src.common_scripts.collectable_definitions import Coin, ManaPotion, HealthPotion
+from src.common_scripts.collectable_definitions import Coin, ManaPotion, HealthPotion, XpShard
 from src.enemies.enemie_manager import EnemieManager
 from src.player import Player
 from src.tilemap.tilemap import TileMap
@@ -60,6 +60,9 @@ class LevelBase(ABC):
     def add_health_potion(self, pos):
         self.collectables.append(HealthPotion(pos, 30))
 
+    def add_xp_shard(self, pos, player):
+        self.collectables.append(XpShard(pos, 5, player))
+
     def update_collectables(self, screen):
         for col in self.collectables:
             col.draw(screen, self.tilemap, offset=self.player.offset)
@@ -107,6 +110,7 @@ class LevelBase(ABC):
         screen.fill((0, 0, 0))
         self.clouds.render(screen, offset=offset)
         self.tilemap.render_tiles(screen, offset, (0, 0))
+        self.update_collectables(screen)
         self.wave.get_current_wave().update(self.player, screen)
         self.update_collectables(screen)
         if self.wave.is_current_wave_over():

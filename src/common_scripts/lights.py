@@ -3,7 +3,7 @@ import random
 import pygame
 
 from src.common_scripts.animation import Animation
-from src.utils import BASE_PATH, WIDTH
+from src.utils import BASE_PATH, WIDTH, TILE_SIZE
 
 
 class PointLight:
@@ -48,5 +48,6 @@ class Lights:
                 render_positions.append((0, 0))
                 continue
             light = self.lights[i]
-            render_positions.append((light.pos[0] / (2.35 * scale) + offset[0] / (2.4 * scale), light.pos[1] / (1.7 * scale) + offset[1] / (1.7 * scale)))
+
+            render_positions.append((light.pos[0] + offset[0] + TILE_SIZE // 2 , light.pos[1] + offset[1] + TILE_SIZE // 2))
         return render_positions.copy()

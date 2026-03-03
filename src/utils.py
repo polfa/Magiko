@@ -24,7 +24,8 @@ BEIGE = (222, 184, 135)
 DARK_BEIGE = (139, 115, 85)
 
 # Screen size
-WIDTH, HEIGHT = 1424, 801
+WIDTH, HEIGHT = 1920, 1080
+SCALE = (WIDTH / 1920, HEIGHT / 1080)
 
 # Tile size
 TILE_SIZE = 64
@@ -85,6 +86,9 @@ def draw_transparent_rect(surface, color, rect, alpha):
     temp_surface.fill((*color, alpha))
     surface.blit(temp_surface, rect.topleft)
 
+def surf_to_texture(surf, tex):
+    tex.write(surf.get_view('1'))
+    return tex
 
 def load_gif_frames(gif_path):
     gif = Image.open(gif_path)

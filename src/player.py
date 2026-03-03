@@ -1,3 +1,5 @@
+import math
+
 import pygame.time as time
 from enum import Enum
 
@@ -200,7 +202,7 @@ class Player:
                 self.stats.add_health(collectable.value)
 
         # update the offset, jump logic, animation and render the player
-        self.offset = (self.offset[0], -((self.pos[1] + HEIGHT//2) - self.initial_pos[1]) // 2)
+        self.offset = (self.offset[0], -((self.pos[1] + HEIGHT//4) - self.initial_pos[1]) // 2)
         self.jump.update(self)
         self.animations[self.state].update()
         self.render(screen)
@@ -279,7 +281,7 @@ class Player:
 
         # if pressing space and the player is not jumping and the jump cooldown is over, jump
         if keys[pygame.K_SPACE]:
-            self.jump.start_jump(self)
+            self.jump.start_jump()
 
         # if not moving and not jumping and not hit, change state to idle
         if not movement and not self.jump.is_jumping() and self.state not in self.attack_states:

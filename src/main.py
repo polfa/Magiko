@@ -5,58 +5,11 @@ import pygame
 from src.UI.UI import UI
 from src.common_scripts.lights import Lights
 from src.levels.level_1.level_1 import Level1
+from src.shaders.lightShader import LightShader
+from src.shaders.uiShader import UIShader
 from utils import *
 from array import array
 import moderngl
-
-vert_shader = '''
-#version 330 core
-
-in vec2 vert;
-in vec2 texcoord;
-out vec2 uvs;
-
-void main() {
-    uvs = texcoord;
-    gl_Position = vec4(vert, 0.0, 1.0);
-}
-'''
-
-frag_shader = '''
-#version 330 core
-
-uniform sampler2D tex;
-uniform vec2 light_positions[8]; // Tres posiciones de luz
-uniform float light_decay[8]; // Tres valores de atenuación
-
-in vec2 uvs;
-out vec4 f_color;
-
-void main() {
-    // Calcular la distancia desde la posición de cada luz a la posición actual del fragmento
-    vec2 screen_size = vec2(800.0, 600.0); // Tamaño de la pantalla 
-    vec2 frag_position = uvs * screen_size; // Posición de fragmento en píxeles
-
-    vec4 tex_color = texture(tex, uvs);
-    vec4 color = vec4(0.0);
-    
-    if (uvs.y > 0.20) {
-
-        for (int i = 0; i < 8; i++) {
-            if (light_positions[i] != vec2(0.0)) {
-                float distance = length(frag_position - light_positions[i]); // Distancia al centro
-                float attenuation = 1.0 / ((distance * distance + light_decay[i]) * 0.0001); // Atenuación
-                color += tex_color * attenuation; // Sumar el efecto de cada luz
-            }
-        }
-        
-    } else {
-        color = tex_color;
-    }
-
-    f_color = color;
-}
-'''
 
 # Shader simple para la UI (sin luces)
 frag_ui = '''
@@ -69,6 +22,11 @@ void main() {
 }
 '''
 
+# --- Cargar código GLSL desde archivo ---
+def load_shader(path: str) -> str:
+    with open(path, 'r', encoding='utf-8') as f:
+        return f.read()
+
 class Main:
     def __init__(self):
         pygame.init()
@@ -76,25 +34,29 @@ class Main:
         self.clock = pygame.time.Clock()
 
         pygame.display.set_caption("Magiko")
+        pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
+        pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 3)
+        pygame.display.gl_set_attribute(pygame.GL_CONTEXT_PROFILE_MASK, pygame.GL_CONTEXT_PROFILE_CORE)
+
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.OPENGL | pygame.DOUBLEBUF)
         self.display = pygame.Surface((WIDTH, HEIGHT))
+        self.ui_surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+
+        # --- Contexto OpenGL ModernGL ---
         self.ctx = moderngl.create_context()
+        self.ctx.enable(moderngl.BLEND)
+        self.ctx.blend_func = (moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA)
 
-        self.quad_buffer = self.ctx.buffer(data=array('f', [
-            -1.0, 1.0, 0.0, 0.0,
-            1.0, 1.0, 1.0, 0.0,
-            -1.0, -1.0, 0.0, 1.0,
-            1.0, -1.0, 1.0, 1.0,
-        ]))
-
-        self.program = self.ctx.program(vertex_shader=vert_shader, fragment_shader=frag_shader)
-        self.render_object = self.ctx.vertex_array(self.program, [(self.quad_buffer, '2f 2f', 'vert', 'texcoord')])
+        # --- Shaders ---
+        self.lightShader = LightShader(self.ctx)
+        self.uiShader = UIShader(self.ctx)
 
         self.running = True
         self.lights = Lights()
         self.level_1 = Level1("level_1", "orange_superhero", self.screen, self)
         self.UI = UI(self.level_1)
         self.max_lights = 8
+
         self.t = 0
 
         self.game_texture = self.ctx.texture((WIDTH, HEIGHT), 4, data=None)
@@ -166,7 +128,6 @@ class Main:
             if event.type == pygame.MOUSEMOTION:
                 self.UI.mouse_move(pygame.mouse.get_pos())
 
-
             if event.type == pygame.KEYDOWN:
                 self.key_pressed(event)
 
@@ -236,4 +197,3 @@ class Main:
 if __name__ == "__main__":
     main = Main()
     main.run()
-    main.game_texture.release()
