@@ -2,7 +2,7 @@ import json
 
 import pygame
 
-from src.utils import TILE_SIZE, WIDTH
+from src.utils import TILE_SIZE, WIDTH, resolve_path
 
 
 class TileMap:
@@ -28,7 +28,7 @@ class TileMap:
         :param name: name of the tile
         :return: None
         """
-        tile = pygame.image.load(f"../img/tiles/{path}").convert()
+        tile = pygame.image.load(resolve_path(f"../img/tiles/{path}")).convert()
         tile = pygame.transform.scale_by(tile, 2)
         self.add_to_tile_list(f"{name}", tile)
 
@@ -89,7 +89,7 @@ class TileMap:
         :param name:
         :return:
         """
-        with open(f"../saves/maps/{name}.json", 'w') as file:
+        with open(resolve_path(f"../saves/maps/{name}.json"), 'w') as file:
             save = {}
             save_grid = {}
             for key, value in self.tile_map.items():
@@ -99,8 +99,15 @@ class TileMap:
             for key, value in self.collision_tile_map.items():
                 pos_str = f"{key[0]};{key[1]}"
                 save_collision_grid[pos_str] = value
+            save_lights = []
+            for pos, light_name in self.light_map:
+                save_lights.append({
+                    "pos": [pos[0], pos[1]],
+                    "name": light_name,
+                })
             save["grid"] = save_grid
             save["collision_grid"] = save_collision_grid
+            save["lights"] = save_lights
             json.dump(save, file)
             print("Map saved")
 
@@ -110,7 +117,7 @@ class TileMap:
         :param name:
         :return:
         """
-        with open(f"../saves/maps/{name}.json", 'r') as file:
+        with open(resolve_path(f"../saves/maps/{name}.json"), 'r') as file:
             save = json.load(file)
             for key, value in save["grid"].items():
                 pos = key.split(";")
@@ -118,6 +125,10 @@ class TileMap:
             for key, value in save["collision_grid"].items():
                 pos = key.split(";")
                 self.collision_tile_map[(int(pos[0]), int(pos[1]))] = value
+            self.light_map = []
+            for light in save.get("lights", []):
+                pos = light["pos"]
+                self.light_map.append(((float(pos[0]), float(pos[1])), light["name"]))
 
             print("Map loaded")
 

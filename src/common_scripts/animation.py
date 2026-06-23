@@ -2,7 +2,7 @@ import os
 import time
 import pygame
 
-from src.utils import BASE_PATH
+from src.utils import resolve_path
 
 
 class Animation:
@@ -30,11 +30,11 @@ class Animation:
         :return: list of frames [pygame.Surface]
         """
         # get the path to the directory and set the frames list
-        dir_path = f"{BASE_PATH}/../{dir_path}"
+        dir_path = resolve_path(dir_path)
         frames = []
 
         # load the frames from the directory
-        for file in os.listdir(dir_path):
+        for file in sorted(os.listdir(dir_path)):
             if file.endswith(".png"):
                 img = pygame.image.load(os.path.join(dir_path, file))
                 img = pygame.transform.scale_by(img, scale).convert()
@@ -85,3 +85,4 @@ class Animation:
         """
         self.current_frame = 0
         self.active = True
+        self.last_update_time = time.time()

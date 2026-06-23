@@ -1,5 +1,5 @@
 import pygame.image
-from src.utils import TILE_SIZE
+from src.utils import TILE_SIZE, resolve_path
 
 
 class LifeBar:
@@ -8,7 +8,7 @@ class LifeBar:
         self.total = enemy.total_life
         self.bar = {}
         for i in range(0, 101, 5):
-            img = pygame.image.load(f"../img/UI/life_bar/{i}.png").convert()
+            img = pygame.image.load(resolve_path(f"../img/UI/life_bar/{i}.png")).convert()
             img.set_colorkey((0, 0, 0))
             img = pygame.transform.scale_by(img, 1.4)
             self.bar[str(i)] = img

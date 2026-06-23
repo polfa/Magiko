@@ -1,6 +1,8 @@
 import random
 import pygame
 
+from src.utils import resolve_path
+
 
 class Cloud:
     __slots__ = ("pos", "img", "speed", "depth")  # Reduce el uso de memoria eliminando __dict__
@@ -47,7 +49,7 @@ class Clouds:
 
     @staticmethod
     def load_image(path):
-        img = pygame.image.load(path)
+        img = pygame.image.load(resolve_path(path))
         img = pygame.transform.scale_by(img, 2)
         img.set_colorkey((0, 0, 0))
         return img

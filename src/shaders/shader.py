@@ -1,10 +1,16 @@
-import moderngl
 from array import array
-from utils import surf_to_texture, WIDTH, HEIGHT
+from pathlib import Path
+
+import moderngl
+
+from src.utils import HEIGHT, WIDTH, surf_to_texture
 
 
 def load_shader(path: str) -> str:
-    with open(path, 'r', encoding='utf-8') as f:
+    shader_path = Path(path)
+    if not shader_path.is_absolute():
+        shader_path = Path(__file__).resolve().parent / shader_path
+    with shader_path.open('r', encoding='utf-8') as f:
         return f.read()
 
 
@@ -25,9 +31,10 @@ class Shader:
         self.texture = self.ctx.texture((WIDTH, HEIGHT), 4, data=None)
         self.texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
         self.texture.swizzle = 'BGRA'
+        if "tex" in self.program:
+            self.program["tex"] = 0
 
     def render(self, surface):
-        self.program['tex'] = 0
         tex = surf_to_texture(surface, self.texture)
         tex.use(0)
         self.render_object.render(moderngl.TRIANGLE_STRIP)

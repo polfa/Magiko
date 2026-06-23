@@ -36,14 +36,16 @@ class BadGoblin:
         self.pos = pos
         self.initial_pos = (pos[0], pos[1])
         self.speed = Random().random() / 4 + 1.7
-        self.attack_time = 20
+        self.attack_animation_speed = 0.02
+        self.hit_delay = 36
         self.animations = {State.TRACKING: Animation("img/characters/bad_goblin/tracking", 0.05),
-                           State.HIT: Animation("img/characters/bad_goblin/hit", self.attack_time / 1000, False)}
+                           State.HIT: Animation("img/characters/bad_goblin/hit", self.attack_animation_speed, False)}
         self.size = TILE_SIZE
         self.direction = 1
         self.state = State.TRACKING
         self.alive = True
         self.hit_timer = 0
+        self.attack_damage_applied = False
         self.jump = Jump(self, jump_power=15, gravity=0.9)
         self.stop = False
 
@@ -85,24 +87,19 @@ class BadGoblin:
         self_rect = self.get_self_hit_box()
         collision, rect = player.rect_contact(self_rect)
 
-        # if player is not hitting the goblin, set hit state and animation
-        if self.animations[self.state] != self.animations[State.HIT] and collision:
-            self.stop = True
-            self.state = State.HIT
-        # if goblin hits the player, make player lose health and move the goblin
-        elif self.animations[self.state] == self.animations[State.HIT]:
-            if self.hit_timer > self.attack_time and collision:
-                self.hit_timer = 0
+        if self.state != State.HIT and collision:
+            self.start_hit_animation()
+        elif self.state == State.HIT:
+            if self.hit_timer > self.hit_delay and collision and not self.attack_damage_applied:
+                self.attack_damage_applied = True
                 player.stats.add_health(-self.damage)
                 self.pos = (self.pos[0] - self.size * self.direction, self.pos[1])
 
-        # if state is hit, add to the hit timer
         if self.state == State.HIT:
             self.hit_timer += 1
 
-        # if any animation is not active, set tracking animation
-        if not self.animations[self.state].active:
-            self.animations[self.state].end()
+        if self.state == State.HIT and not self.animations[State.HIT].active:
+            self.finish_hit_animation()
 
         if not self.stop:
             self.move(player)
@@ -134,10 +131,8 @@ class BadGoblin:
                 return active_ultimate
         else:
             self.stop = False
-            # if player is not hitting the goblin, set tracking state and animation
-            if self.state == State.HIT:
+            if self.state != State.HIT:
                 self.hit_timer = 0
-                self.animations[self.state].end()  # reset the hit animation
             self.state = State.TRACKING
 
         return None
@@ -228,6 +223,20 @@ class BadGoblin:
         encapsulate the reset logic
         """
         self.pos = self.initial_pos
+
+    def start_hit_animation(self):
+        self.stop = True
+        self.state = State.HIT
+        self.hit_timer = 0
+        self.attack_damage_applied = False
+        self.animations[State.HIT].end()
+
+    def finish_hit_animation(self):
+        self.animations[State.HIT].end()
+        self.hit_timer = 0
+        self.attack_damage_applied = False
+        self.stop = False
+        self.state = State.TRACKING
 
     def render(self, screen, offset=(0, 0)):
         """

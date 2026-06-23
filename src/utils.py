@@ -36,6 +36,7 @@ SPEED = 4
 COLLISION_TILES = ["blue_bridge"]
 
 BASE_PATH = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(BASE_PATH)
 
 vert_shader_ui = '''
 #version 330 core
@@ -86,6 +87,15 @@ def draw_transparent_rect(surface, color, rect, alpha):
     temp_surface.fill((*color, alpha))
     surface.blit(temp_surface, rect.topleft)
 
+
+def resolve_path(path):
+    if os.path.isabs(path):
+        return path
+    normalized = path.replace("/", os.sep).replace("\\", os.sep)
+    base_dir = BASE_PATH if normalized.startswith(f"..{os.sep}") else PROJECT_ROOT
+    return os.path.normpath(os.path.join(base_dir, normalized))
+
+
 def surf_to_texture(surf, tex):
     tex.write(surf.get_view('1'))
     return tex
@@ -104,6 +114,7 @@ def load_gif_frames(gif_path):
 
 def load_images_from_directory(directory):
     images = {}
+    directory = resolve_path(directory)
     # Recorre todos los archivos en el directorio
     for filename in os.listdir(directory):
         # Construye la ruta completa al archivo

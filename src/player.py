@@ -8,7 +8,7 @@ from src.common_scripts.collision_manager import CollisionManager
 from src.common_scripts.jump import Jump
 from src.player_utils.player_stats import PlayerStats
 from src.tilemap.tilemap import TileMap
-from utils import *
+from src.utils import *
 
 
 class States(Enum):
@@ -59,7 +59,7 @@ class Player:
         name = self.name
         # load animations for each state
         return {
-            States.IDLE: Animation(f"img/characters/{name}/idle", 0.1),
+            States.IDLE: Animation(f"img/characters/new_character/idle", 0.1),
             States.RUN: Animation(f"img/characters/{name}/run", 0.03),
             States.JUMP: Animation(f"img/characters/{name}/jump", 1),
             States.FALL: Animation(f"img/characters/{name}/fall", 1),
