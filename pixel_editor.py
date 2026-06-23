@@ -1,8 +1,11 @@
 import json
 import math
+import shutil
 import tkinter as tk
+from contextlib import ExitStack
 from copy import deepcopy
 from pathlib import Path
+from collections import Counter
 from tkinter import colorchooser, filedialog, messagebox, simpledialog, ttk
 
 from PIL import Image, ImageDraw, ImageTk
@@ -31,6 +34,21 @@ TOOL_LABELS = {
     "select": "Select",
 }
 
+CORE_CHARACTER_ANIMATIONS = (
+    "basic_ultimate",
+    "fall",
+    "first_hit",
+    "idle",
+    "jump",
+    "run",
+    "strike",
+)
+AI_STRIP_FRAME_COUNT = 10
+AI_BACKGROUND_COLORS = {
+    (255, 0, 255),
+    (255, 255, 255),
+}
+
 
 class PixelEditor:
     def __init__(self, root: tk.Tk) -> None:
@@ -44,7 +62,9 @@ class PixelEditor:
         self.img_dir = self.project_root / "img"
         self.characters_dir = self.img_dir / "characters"
         self.project_dir = self.img_dir / "pixel_editor_exports"
+        self.ai_sources_dir = self.characters_dir / "_ai_sources"
         self.project_dir.mkdir(parents=True, exist_ok=True)
+        self.ai_sources_dir.mkdir(parents=True, exist_ok=True)
 
         self.grid_size = 16
         self.pixel_size = 24
@@ -231,6 +251,7 @@ class PixelEditor:
         ttk.Button(canvas_grid, text="Clear Frame", style="Dark.TButton", command=self.clear_current_frame).grid(row=1, column=0, sticky="ew", padx=(0, 4), pady=2)
         ttk.Button(canvas_grid, text="Flip Horizontal", style="Dark.TButton", command=self.flip_current_frame).grid(row=1, column=1, sticky="ew", padx=(4, 0), pady=2)
         ttk.Button(canvas_grid, text="Import To 32x32", style="Dark.TButton", command=self.import_image_to_32x32).grid(row=2, column=0, columnspan=2, sticky="ew", pady=(2, 0))
+        ttk.Button(canvas_grid, text="Import AI Strip", style="Dark.TButton", command=self.import_ai_strip).grid(row=3, column=0, columnspan=2, sticky="ew", pady=(2, 0))
         ttk.Checkbutton(
             canvas_box,
             text="Onion Skin Previous Frame",
@@ -456,6 +477,8 @@ class PixelEditor:
         self.sprite_list.delete(0, tk.END)
         self.character_sprite_dirs = []
         for directory in sorted(self.characters_dir.rglob("*")):
+            if "_ai_sources" in directory.parts:
+                continue
             if directory.is_dir() and any(directory.glob("*.png")):
                 self.character_sprite_dirs.append(directory)
                 self.sprite_list.insert(tk.END, directory.relative_to(self.project_root).as_posix())
@@ -486,6 +509,64 @@ class PixelEditor:
                     frame[y][x] = f"#{red:02x}{green:02x}{blue:02x}"
         return frame
 
+    def sanitize_asset_name(self, value: str):
+        safe = "".join(char.lower() if char.isalnum() or char in {"_", "-"} else "_" for char in value.strip())
+        return safe.strip("_")
+
+    def classify_background_pixel(self, red: int, green: int, blue: int):
+        if min(red, green, blue) >= 215:
+            return "light"
+        if red >= 170 and blue >= 170 and green <= 165 and abs(red - blue) <= 95 and max(red, blue) - green >= 70:
+            return "magenta"
+        if (red, green, blue) in AI_BACKGROUND_COLORS:
+            return "solid"
+        return None
+
+    def estimate_pixel_block_size(self, image: Image.Image):
+        rgba = image.convert("RGBA")
+        width, height = rgba.size
+        pixels = rgba.load()
+        runs = []
+
+        def collect_runs(outer_length, inner_length, accessor):
+            for outer in range(outer_length):
+                current = None
+                run_length = 0
+                run_has_opaque = False
+                for inner in range(inner_length):
+                    pixel = pixels[inner, outer] if accessor == "row" else pixels[outer, inner]
+                    if pixel == current:
+                        run_length += 1
+                    else:
+                        if run_length > 1 and run_has_opaque:
+                            runs.append(run_length)
+                        current = pixel
+                        run_length = 1
+                        run_has_opaque = pixel[3] > 0
+                        continue
+                    if pixel[3] > 0:
+                        run_has_opaque = True
+                if run_length > 1 and run_has_opaque:
+                    runs.append(run_length)
+
+        collect_runs(height, width, "row")
+        collect_runs(width, height, "column")
+
+        candidates = [run for run in runs if 2 <= run <= 16]
+        if len(candidates) < 8:
+            return 1
+        return Counter(candidates).most_common(1)[0][0]
+
+    def normalize_pixel_art_resolution(self, image: Image.Image):
+        rgba = image.convert("RGBA")
+        block_size = self.estimate_pixel_block_size(rgba)
+        if block_size <= 1:
+            return rgba
+
+        reduced_width = max(1, int(round(rgba.width / block_size)))
+        reduced_height = max(1, int(round(rgba.height / block_size)))
+        return rgba.resize((reduced_width, reduced_height), Image.Resampling.BOX)
+
     def normalize_image_to_square(self, image: Image.Image, target_size: int):
         rgba = image.convert("RGBA")
         bbox = rgba.getbbox()
@@ -494,6 +575,8 @@ class PixelEditor:
 
         if rgba.width == 0 or rgba.height == 0:
             return Image.new("RGBA", (target_size, target_size), (0, 0, 0, 0))
+
+        rgba = self.normalize_pixel_art_resolution(rgba)
 
         scale = min(target_size / rgba.width, target_size / rgba.height)
         resized_width = max(1, int(round(rgba.width * scale)))
@@ -505,6 +588,323 @@ class PixelEditor:
         offset_y = (target_size - resized_height) // 2
         canvas.paste(resized, (offset_x, offset_y), resized)
         return canvas
+
+    def normalize_frames_to_square(self, images, target_size: int):
+        prepared = []
+        max_width = 0
+        max_height = 0
+
+        for image in images:
+            rgba = image.convert("RGBA")
+            bbox = rgba.getbbox()
+            if bbox:
+                rgba = rgba.crop(bbox)
+            else:
+                rgba = Image.new("RGBA", (1, 1), (0, 0, 0, 0))
+
+            rgba = self.normalize_pixel_art_resolution(rgba)
+            prepared.append(rgba)
+            max_width = max(max_width, rgba.width)
+            max_height = max(max_height, rgba.height)
+
+        if max_width == 0 or max_height == 0:
+            return [Image.new("RGBA", (target_size, target_size), (0, 0, 0, 0)) for _ in images]
+
+        scale = min(target_size / max_width, target_size / max_height)
+        resized_width = max(1, int(round(max_width * scale)))
+        resized_height = max(1, int(round(max_height * scale)))
+
+        normalized = []
+        for rgba in prepared:
+            frame_box = Image.new("RGBA", (max_width, max_height), (0, 0, 0, 0))
+            offset_x = (max_width - rgba.width) // 2
+            offset_y = max_height - rgba.height
+            frame_box.paste(rgba, (offset_x, offset_y), rgba)
+
+            resized = frame_box.resize((resized_width, resized_height), Image.Resampling.NEAREST)
+            canvas = Image.new("RGBA", (target_size, target_size), (0, 0, 0, 0))
+            canvas_offset_x = (target_size - resized_width) // 2
+            canvas_offset_y = target_size - resized_height
+            canvas.paste(resized, (canvas_offset_x, canvas_offset_y), resized)
+            normalized.append(canvas)
+        return normalized
+
+    def strip_background_from_frame(self, image: Image.Image):
+        rgba = image.convert("RGBA")
+        pixels = rgba.load()
+        width, height = rgba.size
+
+        border_points = []
+        for x in range(width):
+            border_points.append((x, 0))
+            border_points.append((x, height - 1))
+        for y in range(height):
+            border_points.append((0, y))
+            border_points.append((width - 1, y))
+
+        seeds = []
+        visited = set()
+        for x, y in border_points:
+            red, green, blue, alpha = pixels[x, y]
+            if alpha == 0:
+                continue
+            background_type = self.classify_background_pixel(red, green, blue)
+            if background_type:
+                seeds.append((x, y, background_type))
+
+        for seed_x, seed_y, background_type in seeds:
+            stack = [(seed_x, seed_y)]
+            while stack:
+                x, y = stack.pop()
+                if (x, y) in visited or x < 0 or y < 0 or x >= width or y >= height:
+                    continue
+                visited.add((x, y))
+                red, green, blue, alpha = pixels[x, y]
+                if alpha == 0:
+                    continue
+                if self.classify_background_pixel(red, green, blue) != background_type:
+                    continue
+                pixels[x, y] = (red, green, blue, 0)
+                stack.extend(((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)))
+
+        return rgba
+
+    def find_ai_strip_regions(self, image: Image.Image):
+        rgba = image.convert("RGBA")
+        pixels = rgba.load()
+        width, height = rgba.size
+        block_size = max(1, self.estimate_pixel_block_size(rgba))
+        gap_tolerance = max(2, block_size * 2)
+        min_region_width = max(6, block_size * 4)
+
+        opaque_columns = []
+        for x in range(width):
+            has_opaque = False
+            for y in range(height):
+                if pixels[x, y][3] > 0:
+                    has_opaque = True
+                    break
+            opaque_columns.append(has_opaque)
+
+        regions = []
+        start = None
+        empty_run = 0
+        for x, is_opaque in enumerate(opaque_columns):
+            if is_opaque:
+                if start is None:
+                    start = x
+                empty_run = 0
+                continue
+            if start is None:
+                continue
+            empty_run += 1
+            if empty_run > gap_tolerance:
+                end = x - empty_run
+                if end - start + 1 >= min_region_width:
+                    regions.append((start, end))
+                start = None
+                empty_run = 0
+
+        if start is not None:
+            end = width - 1
+            if end - start + 1 >= min_region_width:
+                regions.append((start, end))
+
+        padded_regions = []
+        horizontal_padding = max(1, block_size)
+        for left, right in regions:
+            padded_left = max(0, left - horizontal_padding)
+            padded_right = min(width - 1, right + horizontal_padding)
+            padded_regions.append((padded_left, padded_right + 1))
+        return padded_regions
+
+    def split_ai_strip_evenly(self, image: Image.Image, frame_count: int):
+        rgba = image.convert("RGBA")
+        if rgba.width < frame_count:
+            raise ValueError(f"Image width is too small to split into {frame_count} frames.")
+
+        frames = []
+        for index in range(frame_count):
+            left = round(index * rgba.width / frame_count)
+            right = round((index + 1) * rgba.width / frame_count)
+            if right <= left:
+                raise ValueError("Could not determine equal frame boundaries for the AI strip.")
+            frames.append(rgba.crop((left, 0, right, rgba.height)))
+        return frames
+
+    def fit_regions_to_frame_count(self, regions, expected_count: int):
+        if not regions:
+            return []
+        if len(regions) == expected_count:
+            return regions
+        if len(regions) > expected_count:
+            merged = list(regions)
+            while len(merged) > expected_count:
+                merge_index = min(
+                    range(len(merged) - 1),
+                    key=lambda idx: max(0, merged[idx + 1][0] - merged[idx][1]),
+                )
+                left = merged[merge_index][0]
+                right = merged[merge_index + 1][1]
+                merged[merge_index:merge_index + 2] = [(left, right)]
+            return merged
+        segments = [1] * len(regions)
+        while sum(segments) < expected_count:
+            split_index = max(
+                range(len(regions)),
+                key=lambda idx: (regions[idx][1] - regions[idx][0]) / segments[idx],
+            )
+            segments[split_index] += 1
+
+        expanded = []
+        for (left, right), segment_count in zip(regions, segments):
+            width = right - left
+            if segment_count == 1:
+                expanded.append((left, right))
+                continue
+            for index in range(segment_count):
+                segment_left = round(left + (width * index) / segment_count)
+                segment_right = round(left + (width * (index + 1)) / segment_count)
+                if segment_right <= segment_left:
+                    continue
+                expanded.append((segment_left, segment_right))
+        return expanded[:expected_count]
+
+    def split_ai_strip(self, image: Image.Image, frame_count: int = AI_STRIP_FRAME_COUNT):
+        stripped = self.strip_background_from_frame(image)
+        regions = self.find_ai_strip_regions(stripped)
+        fitted_regions = self.fit_regions_to_frame_count(regions, frame_count)
+
+        if len(fitted_regions) == frame_count:
+            raw_frames = [stripped.crop((left, 0, right, stripped.height)) for left, right in fitted_regions]
+        else:
+            raw_frames = self.split_ai_strip_evenly(image, frame_count)
+
+        cleaned_frames = [self.strip_background_from_frame(frame) for frame in raw_frames]
+        return self.normalize_frames_to_square(cleaned_frames, 32)
+
+    def frame_names_for_sequence(self, frame_count: int):
+        return [f"{index:02d}.png" for index in range(frame_count)]
+
+    def apply_loaded_frames(self, images, frame_names, loaded_sprite_dir=None, forced_grid_size=None):
+        self.grid_size = forced_grid_size or self.infer_grid_size_from_images(images)
+        self.pixel_size = self.recommended_pixel_size()
+        self.frames = [self.image_to_frame(image) for image in images]
+        self.frame_names = list(frame_names)
+        self.current_frame_index = 0
+        self.loaded_sprite_dir = loaded_sprite_dir
+        self.project_path = None
+        self.canvas_signature = None
+        self.preview_signature = None
+        self.selection_bounds = None
+        self.pending_paste = False
+        palette = self.collect_palette_from_frames()
+        self.selected_color = palette[0]
+        self.previous_color = palette[1] if len(palette) > 1 else palette[0]
+        self.refresh_everything()
+
+    def save_frames_to_directory(self, target_dir: Path):
+        target_dir.mkdir(parents=True, exist_ok=True)
+        for index, frame in enumerate(self.frames):
+            filename = self.frame_names[index] if index < len(self.frame_names) else f"{index:02d}.png"
+            self.frame_to_image(frame).save(target_dir / filename)
+
+    def prompt_ai_strip_metadata(self):
+        character_name = simpledialog.askstring(
+            "AI Strip Import",
+            "Character folder name",
+            initialvalue="new_character",
+            parent=self.root,
+        )
+        if character_name is None:
+            return None, None, None
+
+        safe_character = self.sanitize_asset_name(character_name)
+        if not safe_character:
+            messagebox.showerror("Import failed", "Character name is required.")
+            return None, None, None
+
+        animation_name = simpledialog.askstring(
+            "AI Strip Import",
+            f"Animation name ({', '.join(CORE_CHARACTER_ANIMATIONS)})",
+            initialvalue="idle",
+            parent=self.root,
+        )
+        if animation_name is None:
+            return None, None, None
+
+        safe_animation = self.sanitize_asset_name(animation_name)
+        if not safe_animation:
+            messagebox.showerror("Import failed", "Animation name is required.")
+            return None, None, None
+        if safe_animation not in CORE_CHARACTER_ANIMATIONS:
+            messagebox.showerror(
+                "Import failed",
+                f"Animation must be one of: {', '.join(CORE_CHARACTER_ANIMATIONS)}.",
+            )
+            return None, None, None
+
+        frame_count = simpledialog.askinteger(
+            "AI Strip Import",
+            "How many frames does this animation have?",
+            initialvalue=AI_STRIP_FRAME_COUNT,
+            minvalue=1,
+            maxvalue=99,
+            parent=self.root,
+        )
+        if frame_count is None:
+            return None, None, None
+        return safe_character, safe_animation, frame_count
+
+    def import_ai_strip(self):
+        selected = filedialog.askopenfilename(
+            title="Import AI strip",
+            initialdir=self.img_dir,
+            filetypes=[
+                ("Image files", "*.png *.bmp *.gif *.jpg *.jpeg *.webp"),
+                ("All files", "*.*"),
+            ],
+        )
+        if not selected:
+            return
+
+        character_name, animation_name, frame_count = self.prompt_ai_strip_metadata()
+        if not character_name or not animation_name or not frame_count:
+            return
+
+        target_dir = self.characters_dir / character_name / animation_name
+        source_copy_path = self.ai_sources_dir / character_name / f"{animation_name}.png"
+
+        try:
+            with Image.open(selected) as source:
+                frames = self.split_ai_strip(source, frame_count)
+            self.push_undo_snapshot()
+            self.apply_loaded_frames(
+                frames,
+                self.frame_names_for_sequence(len(frames)),
+                loaded_sprite_dir=target_dir,
+                forced_grid_size=32,
+            )
+            source_copy_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(selected, source_copy_path)
+            self.save_frames_to_directory(target_dir)
+            self.refresh_sprite_sources()
+            self.update_title()
+            self.update_status(
+                extra_message=(
+                    f"Imported AI strip to {target_dir.relative_to(self.project_root).as_posix()} "
+                    f"and archived source in {source_copy_path.relative_to(self.project_root).as_posix()}"
+                )
+            )
+            messagebox.showinfo(
+                "Import complete",
+                (
+                    f"Saved {len(frames)} frame(s) to\n{target_dir}\n\n"
+                    f"Source strip archived in\n{source_copy_path}"
+                ),
+            )
+        except Exception as exc:
+            messagebox.showerror("Import failed", f"Could not import AI strip:\n{exc}")
 
     def import_image_to_32x32(self):
         selected = filedialog.askopenfilename(
@@ -556,21 +956,10 @@ class PixelEditor:
             messagebox.showerror("Open failed", "The selected folder contains no PNG files.")
             return
 
-        images = [Image.open(path) for path in png_files]
+        with ExitStack() as stack:
+            images = [stack.enter_context(Image.open(path)).copy() for path in png_files]
         self.push_undo_snapshot()
-        self.grid_size = self.infer_grid_size_from_images(images)
-        self.pixel_size = self.recommended_pixel_size()
-        self.frames = [self.image_to_frame(image) for image in images]
-        self.frame_names = [path.name for path in png_files]
-        self.current_frame_index = 0
-        self.loaded_sprite_dir = folder
-        self.project_path = None
-        self.selection_bounds = None
-        self.pending_paste = False
-        palette = self.collect_palette_from_frames()
-        self.selected_color = palette[0]
-        self.previous_color = palette[1] if len(palette) > 1 else palette[0]
-        self.refresh_everything()
+        self.apply_loaded_frames(images, [path.name for path in png_files], loaded_sprite_dir=folder)
         self.update_status(extra_message=f"Loaded {folder.relative_to(self.project_root).as_posix()}")
 
     def create_tool_icon(self, tool_name: str):
@@ -1284,9 +1673,7 @@ class PixelEditor:
             target_dir = Path(selected)
             self.loaded_sprite_dir = target_dir
 
-        for index, frame in enumerate(self.frames):
-            filename = self.frame_names[index] if index < len(self.frame_names) else f"frame_{index + 1:02d}.png"
-            self.frame_to_image(frame).save(target_dir / filename)
+        self.save_frames_to_directory(target_dir)
         self.refresh_sprite_sources()
         self.update_title()
         self.update_status(extra_message=f"Saved {len(self.frames)} frame(s) to {target_dir.relative_to(self.project_root).as_posix()}")

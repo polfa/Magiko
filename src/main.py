@@ -13,7 +13,7 @@ from src.common_scripts.lights import Lights
 from src.levels.level_1.level_1 import Level1
 from src.shaders.lightShader import LightShader
 from src.shaders.uiShader import UIShader
-from src.utils import FPS, HEIGHT, WIDTH
+from src.utils import FPS, HEIGHT, WIDTH, create_opengl_window
 
 
 class Main:
@@ -22,18 +22,7 @@ class Main:
         pygame.mixer.init()
         self.clock = pygame.time.Clock()
 
-        pygame.display.set_caption("Magiko")
-        pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
-        pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 3)
-        pygame.display.gl_set_attribute(
-            pygame.GL_CONTEXT_PROFILE_MASK,
-            pygame.GL_CONTEXT_PROFILE_CORE,
-        )
-
-        self.screen = pygame.display.set_mode(
-            (WIDTH, HEIGHT),
-            pygame.OPENGL | pygame.DOUBLEBUF,
-        )
+        self.screen = create_opengl_window("Magiko")
 
         self.ctx = moderngl.create_context()
         self.ctx.enable(moderngl.BLEND)

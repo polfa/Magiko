@@ -6,20 +6,13 @@ from src.common_scripts.lights import Lights, PointLight
 from src.shaders.lightShader import LightShader
 from src.shaders.uiShader import UIShader
 from src.tilemap.tilemap import TileMap
-from src.utils import WIDTH, SPEED, TILE_SIZE, HEIGHT, load_images_from_directory
+from src.utils import WIDTH, SPEED, TILE_SIZE, HEIGHT, create_opengl_window, load_images_from_directory
 
 
 class LevelCreator:
     def __init__(self):
         pygame.init()
-        pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
-        pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 3)
-        pygame.display.gl_set_attribute(
-            pygame.GL_CONTEXT_PROFILE_MASK,
-            pygame.GL_CONTEXT_PROFILE_CORE,
-        )
-        self.screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.OPENGL | pygame.DOUBLEBUF)
-        pygame.display.set_caption("Magiko")
+        self.screen = create_opengl_window("Magiko")
         self.ctx = moderngl.create_context()
         self.ctx.enable(moderngl.BLEND)
         self.ctx.blend_func = (moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA)

@@ -57,14 +57,16 @@ class Player:
 
     def load_animations(self):
         name = self.name
+        movement_preview_name = "new_character"
+        primary_preview_name = "new_character"
         # load animations for each state
         return {
-            States.IDLE: Animation(f"img/characters/new_character/idle", 0.1),
-            States.RUN: Animation(f"img/characters/{name}/run", 0.03),
-            States.JUMP: Animation(f"img/characters/{name}/jump", 1),
+            States.IDLE: Animation(f"img/characters/{movement_preview_name}/idle", 0.1),
+            States.RUN: Animation(f"img/characters/{movement_preview_name}/run", 0.03),
+            States.JUMP: Animation(f"img/characters/{movement_preview_name}/jump", 1),
             States.FALL: Animation(f"img/characters/{name}/fall", 1),
 
-            States.PRIMARY: Animation(self.stats.get_active_primary().get_animation_path(name), 0.015, loop=False)
+            States.PRIMARY: Animation(self.stats.get_active_primary().get_animation_path(primary_preview_name), 0.015, loop=False)
             if self.stats.get_active_primary() is not None else None,
 
             States.SECONDARY: Animation(self.stats.get_active_secondary().get_animation_path(name), 0.022, loop=False)

@@ -100,6 +100,42 @@ def surf_to_texture(surf, tex):
     tex.write(surf.get_view('1'))
     return tex
 
+
+def get_safe_window_size():
+    display_info = pygame.display.Info()
+    monitor_width = display_info.current_w or WIDTH
+    monitor_height = display_info.current_h or HEIGHT
+
+    target_width = min(WIDTH, int(monitor_width * 0.9))
+    target_height = min(HEIGHT, int(monitor_height * 0.9))
+    aspect_ratio = WIDTH / HEIGHT
+
+    if target_width / target_height > aspect_ratio:
+        target_width = int(target_height * aspect_ratio)
+    else:
+        target_height = int(target_width / aspect_ratio)
+
+    return max(960, target_width), max(540, target_height)
+
+
+def create_opengl_window(title):
+    os.environ.setdefault("SDL_VIDEO_CENTERED", "1")
+    pygame.display.set_caption(title)
+    pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MAJOR_VERSION, 3)
+    pygame.display.gl_set_attribute(pygame.GL_CONTEXT_MINOR_VERSION, 3)
+    pygame.display.gl_set_attribute(
+        pygame.GL_CONTEXT_PROFILE_MASK,
+        pygame.GL_CONTEXT_PROFILE_CORE,
+    )
+
+    window_size = get_safe_window_size()
+    flags = pygame.OPENGL | pygame.DOUBLEBUF
+
+    try:
+        return pygame.display.set_mode(window_size, flags, vsync=1)
+    except TypeError:
+        return pygame.display.set_mode(window_size, flags)
+
 def load_gif_frames(gif_path):
     gif = Image.open(gif_path)
     frames = []
